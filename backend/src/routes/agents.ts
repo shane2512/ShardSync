@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { storeBlob, readBlob, blobExists } from "../services/walrus.js";
+import { storeBlob, readBlob } from "../services/walrus.js";
 import {
   getOwnedObjects,
   getObject,
@@ -262,15 +262,12 @@ agentRouter.get("/executions", async (req: Request, res: Response) => {
 agentRouter.get("/blobs/:blobId", async (req: Request, res: Response) => {
   try {
     const blobId = req.params.blobId as string;
-    const available = await blobExists(blobId);
-
-    if (!available) {
+    try {
+      const content = await readBlob(blobId);
+      res.json({ blobId, content, available: true });
+    } catch {
       res.json({ blobId, content: null, available: false });
-      return;
     }
-
-    const content = await readBlob(blobId);
-    res.json({ blobId, content, available: true });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
