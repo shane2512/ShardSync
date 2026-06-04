@@ -82,12 +82,12 @@ export default function TimelinePage() {
                 <span className="text-label-mono text-secondary text-[10px] uppercase tracking-wider">Network Active</span>
               </div>
             </div>
-            
+
             <Link href="/agents/create" className="w-full py-3 rounded-2xl bg-secondary text-white font-bold flex items-center justify-center gap-2 clay-button-primary transition-all hover:translate-x-1 no-underline">
               <span className="material-symbols-outlined">add</span>
               <span>Create New Agent</span>
             </Link>
-            
+
             <div className="space-y-1">
               <Link href="/agents" className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container-high transition-all duration-200 text-on-surface-variant group no-underline">
                 <span className="material-symbols-outlined group-hover:text-secondary">dashboard</span>
@@ -103,7 +103,7 @@ export default function TimelinePage() {
 
         {/* Main Timeline Canvas */}
         <div className="flex-1 relative">
-          
+
           {loading && (
             <div className="space-y-12 pl-16">
               <div className="w-full h-32 bg-surface-container-high animate-pulse rounded-[24px]"></div>
@@ -132,14 +132,14 @@ export default function TimelinePage() {
           {!loading && !error && entries.length > 0 && (
             <>
               {/* Vertical Connector Line */}
-              <div className="absolute left-6 top-8 bottom-0 w-[4px] rounded-full z-0" style={{ background: "linear-gradient(180deg, #4648d4 0%, rgba(70, 72, 212, 0.1) 100%)", boxShadow: "inset 1px 0px 2px rgba(255,255,255,0.5)" }}></div>
-              
+              <div className="absolute left-6 top-8 bottom-0 w-[4px] rounded-full z-0" style={{ background: "linear-gradient(180deg, #0066CC 0%, rgba(70, 72, 212, 0.1) 100%)", boxShadow: "inset 1px 0px 2px rgba(255,255,255,0.5)" }}></div>
+
               <div className="space-y-12 pl-16">
                 {entries.map((entry, i) => (
                   <div key={`${entry.txDigest}-${i}`} className="relative group">
                     {/* Node Pip */}
                     <div className={`absolute -left-[54px] top-8 w-6 h-6 rounded-full border-4 border-background z-10 shadow-[0_4px_10px_rgba(0,0,0,0.1),inset_1px_1px_2px_rgba(255,255,255,0.8)] ${entry.event.success ? "bg-secondary" : "bg-error"}`}></div>
-                    
+
                     <div className="clay-card p-8 transition-transform duration-300 hover:scale-[1.01]">
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-3">
@@ -154,7 +154,7 @@ export default function TimelinePage() {
                         </div>
                         <span className="text-on-surface-variant font-label-mono text-[12px]">{timeAgo(entry.timestampMs)}</span>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <div className="flex flex-wrap gap-4">
                           <div className="clay-inset px-4 py-2 rounded-xl flex flex-col">
@@ -166,7 +166,7 @@ export default function TimelinePage() {
                             <span className="font-label-mono text-primary text-[13px]">{shortenId(entry.event.version_id, 12)}</span>
                           </div>
                         </div>
-                        
+
                         <a href={`https://suiscan.xyz/testnet/tx/${entry.txDigest}`} target="_blank" rel="noopener noreferrer" className="p-4 bg-surface-container rounded-2xl flex items-center justify-between hover:bg-secondary-fixed transition-colors no-underline group/link">
                           <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-outline">receipt_long</span>

@@ -18,7 +18,7 @@ interface AgentStats {
 }
 
 const CHART_COLORS = {
-  indigo: "#4648d4",
+  indigo: "#0066CC",
   cyan: "#2dd4bf",
   emerald: "#22c55e",
   rose: "#ba1a1a",
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
         <div className="w-48 h-8 bg-surface-container-high animate-pulse rounded-lg mb-4"></div>
         <div className="w-96 h-4 bg-surface-container-high animate-pulse rounded-lg mb-12"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter mb-10">
-          {[1,2,3,4,5].map(i => <div key={i} className={`clay-card h-40 animate-pulse ${i === 5 ? 'lg:col-span-1 md:col-span-2' : ''}`}></div>)}
+          {[1, 2, 3, 4, 5].map(i => <div key={i} className={`clay-card h-40 animate-pulse ${i === 5 ? 'lg:col-span-1 md:col-span-2' : ''}`}></div>)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-10">
           <div className="lg:col-span-2 clay-card h-[400px] animate-pulse"></div>
@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
         <div className="clay-card p-8 flex flex-col items-center justify-center text-center">
           <h3 className="font-headline-sm text-headline-sm text-primary mb-1 self-start">Success Rate</h3>
           <p className="font-label-mono text-[12px] text-on-tertiary-container uppercase mb-8 self-start">Integrity Score</p>
-          
+
           {overview.executions > 0 ? (
             <>
               <div className="relative w-48 h-48 mb-6">
@@ -287,12 +287,12 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
                 <XAxis dataKey="name" stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} />
                 <YAxis stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} cursor={{fill: 'rgba(0,0,0,0.02)'}} />
+                <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
                 <Bar dataKey="versions" fill={CHART_COLORS.indigo} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-             <div className="w-full h-full flex items-center justify-center font-label-mono text-outline">No agents available</div>
+            <div className="w-full h-full flex items-center justify-center font-label-mono text-outline">No agents available</div>
           )}
         </div>
       </div>
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
               </div>
             ))
           ) : (
-             <div className="clay-card p-8 text-center font-label-mono text-outline">No agents registered</div>
+            <div className="clay-card p-8 text-center font-label-mono text-outline">No agents registered</div>
           )}
         </div>
       </div>
