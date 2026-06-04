@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 const NAV = [
   { id: "overview", label: "Overview", icon: "auto_awesome" },
@@ -18,23 +17,6 @@ export default function DocsPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--color-surface)" }}>
-      {/* Top bar */}
-      <header className="border-b border-white/10 sticky top-0 z-30 backdrop-blur-xl" style={{ background: "rgba(var(--color-surface-rgb, 15,15,35),0.85)" }}>
-        <div className="max-w-container-max mx-auto px-margin-desktop h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 text-primary no-underline">
-              <span className="material-symbols-outlined text-secondary">shard</span>
-              <span className="font-headline-sm text-[18px]">ShardSync</span>
-            </Link>
-            <span className="text-on-surface-variant">/</span>
-            <span className="font-body-md text-secondary">Docs</span>
-          </div>
-          <Link href="/agents" className="clay-button-primary px-5 py-2 rounded-xl font-headline-sm text-white no-underline text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">dashboard</span>
-            Launch App
-          </Link>
-        </div>
-      </header>
 
       <div className="max-w-container-max mx-auto px-margin-desktop flex gap-10 py-12 w-full">
         {/* Sidebar */}
