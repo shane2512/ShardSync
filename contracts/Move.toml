@@ -1,0 +1,6 @@
+[package]
+name = "shardsync"
+edition = "2024"
+
+[addresses]
+shardsync = "0x0"
