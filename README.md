@@ -70,7 +70,7 @@ There is no standard way to:
 
 | Feature | Description |
 |---|---|
-| 🗂 **Version History** | Every config change creates an on-chain version. Browse, compare, and restore any snapshot. |
+|  **Version History** | Every config change creates an on-chain version. Browse, compare, and restore any snapshot. |
 |  **Agent Forking** | Clone any agent into a new independent registry. Experiment safely without affecting the original. |
 |  **Real Execution** | Trigger live Tatum MCP tool calls (`suix_getAllBalances`, `suix_queryTransactionBlocks`, etc.) with real chain data. |
 |  **Diff Viewer** | Side-by-side JSON comparison of any two versions with color-coded additions and removals. |
