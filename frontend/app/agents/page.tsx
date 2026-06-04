@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { listAgents, shortenId, timeAgo } from "../lib/api";
+import { useWalletAddress, useIsWalletConnected } from "../hooks/useWalletAddress";
 
 interface AgentFields {
   name: string;
@@ -25,7 +26,8 @@ export default function AgentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const owner = process.env.NEXT_PUBLIC_DEFAULT_ADDRESS || "";
+  const owner = useWalletAddress();
+  const isConnected = useIsWalletConnected();
 
   useEffect(() => {
     if (!owner) return;
@@ -54,11 +56,22 @@ export default function AgentsPage() {
         <div>
           <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "4px" }}>Agents</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-            On-chain agents owned by <code className="mono" style={{ color: "var(--accent-cyan)", fontSize: "12px" }}>{shortenId(owner)}</code>
+            {isConnected
+              ? <>On-chain agents owned by <code className="mono" style={{ color: "var(--accent-cyan)", fontSize: "12px" }}>{shortenId(owner)}</code></>
+              : <span style={{ color: "var(--accent-amber)" }}>⚡ Connect your wallet to see your agents</span>
+            }
           </p>
         </div>
         <Link href="/agents/create" className="btn-primary">+ New Agent</Link>
       </div>
+
+      {!isConnected && (
+        <div className="card" style={{ padding: "48px", textAlign: "center", cursor: "default", marginBottom: "24px", borderColor: "rgba(251,191,36,0.2)" }}>
+          <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔗</div>
+          <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px" }}>Wallet Not Connected</div>
+          <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Connect your Slush or Sui wallet using the button in the top-right to load your on-chain agents.</p>
+        </div>
+      )}
 
       <input type="text" placeholder="Search agents..." value={search} onChange={(e) => setSearch(e.target.value)}
         style={{ width: "100%", padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "14px", outline: "none", marginBottom: "24px" }} />

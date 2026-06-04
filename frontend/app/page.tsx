@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { checkHealth, listAgents, listExecutions, shortenId } from "./lib/api";
+import { useWalletAddress, useIsWalletConnected } from "./hooks/useWalletAddress";
 
 export default function Home() {
   const [health, setHealth] = useState<{ status: string; checkpoint: string } | null>(null);
   const [stats, setStats] = useState({ agents: 0, executions: 0 });
   const [loading, setLoading] = useState(true);
-  const owner = process.env.NEXT_PUBLIC_DEFAULT_ADDRESS || "";
+  const owner = useWalletAddress();
+  const isConnected = useIsWalletConnected();
   const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
 
   useEffect(() => {

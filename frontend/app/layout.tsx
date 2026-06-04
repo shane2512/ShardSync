@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "./components/Navbar";
+import { WalletProviders } from "./components/WalletProviders";
 
 export const metadata: Metadata = {
   title: "ShardSync – Git for Autonomous Agents",
@@ -19,8 +20,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <Navbar />
-        <main style={{ paddingTop: "72px" }}>{children}</main>
+        <WalletProviders>
+          <Navbar />
+          <main style={{ paddingTop: "72px" }}>{children}</main>
+        </WalletProviders>
       </body>
     </html>
   );

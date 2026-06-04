@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
 } from "recharts";
 import { listAgents, listVersions, listExecutions, checkHealth, shortenId } from "../lib/api";
+import { useWalletAddress } from "../hooks/useWalletAddress";
 
 interface AgentStats {
   name: string;
@@ -35,7 +36,7 @@ export default function AnalyticsPage() {
   const [execTimeline, setExecTimeline] = useState<{ time: string; count: number; success: number; fail: number }[]>([]);
   const [overview, setOverview] = useState({ agents: 0, versions: 0, executions: 0, successRate: 0, checkpoint: "" });
   const [loading, setLoading] = useState(true);
-  const owner = process.env.NEXT_PUBLIC_DEFAULT_ADDRESS || "";
+  const owner = useWalletAddress();
 
   const load = useCallback(async () => {
     try {

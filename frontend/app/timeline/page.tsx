@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { listExecutions, listAgents, shortenId, timeAgo } from "../lib/api";
+import { useWalletAddress } from "../hooks/useWalletAddress";
 
 interface ExecutionEvent {
   agent_id: string;
@@ -23,7 +24,7 @@ export default function TimelinePage() {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const owner = process.env.NEXT_PUBLIC_DEFAULT_ADDRESS || "";
+  const owner = useWalletAddress();
 
   useEffect(() => {
     async function load() {
