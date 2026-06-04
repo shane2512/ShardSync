@@ -6,8 +6,28 @@ import { agentRouter } from "./routes/agents.js";
 const env = getEnv();
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS — allow the deployed Vercel frontend and local dev
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  // Allow all Vercel preview URLs for this project
+  /\.vercel\.app$/,
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+      const allowed = allowedOrigins.some((o) =>
+        typeof o === "string" ? o === origin : o.test(origin)
+      );
+      callback(allowed ? null : new Error("Not allowed by CORS"), allowed);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "2mb" }));
 
 // Routes

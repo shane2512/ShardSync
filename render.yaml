@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: shardsync-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: TATUM_SUI_RPC_URL
+        value: https://sui-testnet.gateway.tatum.io/
+      - key: WALRUS_PUBLISHER_URL
+        value: https://publisher.walrus-testnet.walrus.space
+      - key: WALRUS_AGGREGATOR_URL
+        value: https://aggregator.walrus-testnet.walrus.space
+      - key: SUI_NETWORK
+        value: testnet
+      # Set these in Render dashboard (do NOT commit secrets):
+      # TATUM_API_KEY
+      # SHARDSYNC_PACKAGE_ID
+      # FRONTEND_URL  (your Vercel URL, e.g. https://shardsync.vercel.app)
