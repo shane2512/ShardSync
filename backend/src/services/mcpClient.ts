@@ -1,5 +1,10 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { getEnv } from "../config/env.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface McpCallResult {
   success: boolean;
@@ -18,15 +23,16 @@ export async function callTatumMcpTool(
   const env = getEnv();
   
   return new Promise((resolve) => {
-    console.log(`[MCP Client] Spawning Tatum MCP to call "${toolName}" with args:`, args);
+    // Resolve the absolute path to the local @tatumio/blockchain-mcp package cli.js
+    const mcpPath = path.resolve(__dirname, "../../node_modules/@tatumio/blockchain-mcp/dist/cli.js");
+    console.log(`[MCP Client] Spawning node with "${mcpPath}" to call "${toolName}" with args:`, args);
 
-    // Spawn the Tatum MCP server using npx in non-interactive mode
-    const mcpProcess = spawn("npx", ["-y", "@tatumio/blockchain-mcp"], {
+    // Spawn the Tatum MCP server directly via Node.js (no shell layer required)
+    const mcpProcess = spawn("node", [mcpPath], {
       env: {
         ...process.env,
         TATUM_API_KEY: env.TATUM_API_KEY,
       },
-      shell: true,
     });
 
     let stdoutBuffer = "";
