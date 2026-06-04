@@ -59,6 +59,47 @@ export async function getLatestCheckpoint(): Promise<string> {
   return suiRpc<string>("sui_getLatestCheckpointSequenceNumber");
 }
 
+/**
+ * Get SUI coin balance for an address.
+ * coinType defaults to "0x2::sui::SUI" (the native coin).
+ * Tatum docs: suix_getBalance
+ */
+export async function getSuiBalance(
+  address: string,
+  coinType = "0x2::sui::SUI"
+): Promise<{ coinType: string; coinObjectCount: number; totalBalance: string }> {
+  return suiRpc("suix_getBalance", [address, coinType]);
+}
+
+/**
+ * Get all coin balances for an address.
+ * Tatum docs: suix_getAllBalances
+ */
+export async function getSuiAllBalances(
+  address: string
+): Promise<Array<{ coinType: string; coinObjectCount: number; totalBalance: string }>> {
+  return suiRpc("suix_getAllBalances", [address]);
+}
+
+/**
+ * Query transaction blocks for a given address.
+ * Tatum docs: suix_queryTransactionBlocks
+ */
+export async function querySuiTransactions(
+  address: string,
+  limit = 10
+): Promise<{ data: unknown[]; nextCursor: string | null; hasNextPage: boolean }> {
+  return suiRpc("suix_queryTransactionBlocks", [
+    {
+      filter: { FromOrToAddress: { addr: address } },
+      options: { showInput: false, showEffects: false, showEvents: false },
+    },
+    null,    // cursor
+    limit,
+    true,    // descending
+  ]);
+}
+
 /** Get an object by ID. */
 export async function getObject(objectId: string): Promise<unknown> {
   return suiRpc("sui_getObject", [

@@ -6,6 +6,9 @@ import {
   queryEvents,
   getLatestCheckpoint,
   suiRpc,
+  getSuiBalance,
+  getSuiAllBalances,
+  querySuiTransactions,
 } from "../services/tatum.js";
 import { getEnv } from "../config/env.js";
 import {
@@ -174,44 +177,100 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
       ? configWallet
       : targetWallet;
 
-    // 4. Map configuration values to correct Tatum Data API field names
-    // NOTE: Tatum Data API uses "addresses" (plural) for portfolio and tx history tools.
-    // "get_wallet_portfolio" also requires tokenTypes.
-    // Chain identifiers: "sui-testnet" is not supported by the Data API — use gateway_execute_rpc for Sui specifics.
+    // 4. Route tool calls based on chain type.
+    // The Tatum Data API (/v4/data/) is EVM/Bitcoin-only — it does NOT support Sui.
+    // For Sui chains, we use suiRpc() (Tatum JSON-RPC Gateway) directly.
+    const isSuiChain = targetChain.toLowerCase().includes("sui");
     const toolArgs: Record<string, any> = {};
-    if (toolToRun === "get_transaction_history") {
-      toolArgs.addresses = queryAddress;  // plural — Tatum Data API requirement
-      toolArgs.chain = targetChain;
-    } else if (toolToRun === "get_wallet_portfolio") {
-      toolArgs.addresses = queryAddress;  // plural — Tatum Data API requirement
-      toolArgs.chain = targetChain;
-      toolArgs.tokenTypes = "native";     // required field
-    } else if (toolToRun === "check_malicous_address" || toolToRun === "check_malicious_address") {
-      toolArgs.address = queryAddress;
-    } else if (toolToRun === "get_exchange_rate") {
-      toolArgs.symbol = "SUI";
-      toolArgs.basePair = "USD";
-    } else if (toolToRun === "gateway_execute_rpc") {
-      toolArgs.chain = targetChain;
-      toolArgs.method = "suix_getBalance";
-      toolArgs.params = [queryAddress];
-    } else {
-      // Generic fallback for other Data API tools
-      toolArgs.addresses = queryAddress;
-      toolArgs.address = queryAddress;
-      toolArgs.chain = targetChain;
-    }
-
-    // 5. Call Tatum MCP programmatically
     let mcpResult = { success: false, output: null as any, error: undefined as string | undefined };
-    try {
-      const callRes = await callTatumMcpTool(toolToRun, toolArgs);
-      mcpResult.success = callRes.success;
-      mcpResult.output = callRes.output;
-      mcpResult.error = callRes.error;
-    } catch (e: any) {
-      mcpResult.success = false;
-      mcpResult.error = e.message || String(e);
+
+    if (isSuiChain) {
+      // ── Sui path: Tatum JSON-RPC Gateway (sui-testnet.gateway.tatum.io) ─────
+      // The Tatum Data API (/v4/data/) is EVM/BTC-only. For Sui we call the
+      // correct suix_* JSON-RPC methods via the gateway helper functions.
+      try {
+        if (toolToRun === "get_transaction_history") {
+          // suix_queryTransactionBlocks — filter by FromOrToAddress
+          const txResult = await querySuiTransactions(queryAddress, 10);
+          mcpResult.success = true;
+          mcpResult.output = {
+            rpc_method: "suix_queryTransactionBlocks",
+            address: queryAddress,
+            data: txResult,
+          };
+          toolArgs.address = queryAddress;
+          toolArgs.rpc_method = "suix_queryTransactionBlocks";
+
+        } else if (toolToRun === "get_wallet_portfolio" || toolToRun === "get_wallet_balance_by_time") {
+          // suix_getAllBalances — returns all coin types held by the address
+          const balances = await getSuiAllBalances(queryAddress);
+          // Also fetch native SUI balance for a clean summary
+          const suiBalance = await getSuiBalance(queryAddress);
+          mcpResult.success = true;
+          mcpResult.output = {
+            rpc_method: "suix_getAllBalances + suix_getBalance",
+            address: queryAddress,
+            sui_native: suiBalance,
+            all_balances: balances,
+          };
+          toolArgs.address = queryAddress;
+          toolArgs.rpc_method = "suix_getAllBalances";
+
+        } else if (toolToRun === "check_malicous_address" || toolToRun === "check_malicious_address") {
+          // Tatum Data API security endpoint works cross-chain — no Sui restriction
+          const callRes = await callTatumMcpTool("check_malicious_address", { address: queryAddress });
+          mcpResult = { success: callRes.success, output: callRes.output, error: callRes.error };
+          toolArgs.address = queryAddress;
+          toolArgs.tool = "check_malicious_address";
+
+        } else if (toolToRun === "get_exchange_rate") {
+          // Exchange rate also works cross-chain via Tatum Data API
+          const callRes = await callTatumMcpTool("get_exchange_rate", { symbol: "SUI", basePair: "USD" });
+          mcpResult = { success: callRes.success, output: callRes.output, error: callRes.error };
+          toolArgs.symbol = "SUI";
+          toolArgs.basePair = "USD";
+
+        } else {
+          // Fallback: return SUI native balance for any unrecognised tool
+          const suiBalance = await getSuiBalance(queryAddress);
+          mcpResult.success = true;
+          mcpResult.output = { rpc_method: "suix_getBalance", address: queryAddress, data: suiBalance };
+          toolArgs.address = queryAddress;
+          toolArgs.rpc_method = "suix_getBalance";
+        }
+      } catch (e: any) {
+        mcpResult.success = false;
+        mcpResult.error = e.message || String(e);
+      }
+    } else {
+      // ── EVM / other chains: use Tatum Data API via mcpClient ───────────────
+      if (toolToRun === "get_transaction_history") {
+        toolArgs.addresses = queryAddress;
+        toolArgs.chain = targetChain;
+      } else if (toolToRun === "get_wallet_portfolio") {
+        toolArgs.addresses = queryAddress;
+        toolArgs.chain = targetChain;
+        toolArgs.tokenTypes = "native";
+      } else if (toolToRun === "check_malicous_address" || toolToRun === "check_malicious_address") {
+        toolArgs.address = queryAddress;
+      } else if (toolToRun === "get_exchange_rate") {
+        toolArgs.symbol = "SUI";
+        toolArgs.basePair = "USD";
+      } else {
+        toolArgs.addresses = queryAddress;
+        toolArgs.address = queryAddress;
+        toolArgs.chain = targetChain;
+      }
+
+      try {
+        const callRes = await callTatumMcpTool(toolToRun, toolArgs);
+        mcpResult.success = callRes.success;
+        mcpResult.output = callRes.output;
+        mcpResult.error = callRes.error;
+      } catch (e: any) {
+        mcpResult.success = false;
+        mcpResult.error = e.message || String(e);
+      }
     }
 
     // 6. Build the execution log structured around the MCP call output
