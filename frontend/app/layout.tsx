@@ -5,7 +5,7 @@ import { Footer } from "./components/Footer";
 import { WalletProviders } from "./components/WalletProviders";
 
 export const metadata: Metadata = {
-  title: "ShardSync – Git for Autonomous Agents",
+  title: "ShardSync – Version Control for Autonomous Agents",
   description:
     "Version, inspect, fork, and roll back autonomous AI agents with cryptographic guarantees on Sui + Walrus.",
 };
