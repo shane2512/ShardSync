@@ -467,7 +467,13 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
         {executions.map((e, i) => (
           <div key={i} className="card" style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "16px", cursor: "default" }}>
             <span className={`badge ${e.success ? "badge-success" : "badge-error"}`}>{e.success ? "✓ Pass" : "✕ Fail"}</span>
-            <div className="mono" style={{ fontSize: "12px", color: "var(--text-muted)" }}>log: {shortenId(String(e.walrus_log_blob_id || ""), 8)}</div>
+            <div 
+              className="mono" 
+              style={{ fontSize: "12px", color: "var(--text-muted)", cursor: "pointer", textDecoration: "underline", textDecorationColor: "var(--border-subtle)" }}
+              onClick={() => handleViewBlob(String(e.walrus_log_blob_id || ""))}
+            >
+              log: {shortenId(String(e.walrus_log_blob_id || ""), 8)}
+            </div>
             <span className="mono" style={{ fontSize: "12px", color: "var(--text-muted)" }}>ver: {shortenId(String(e.version_id || ""))}</span>
           </div>
         ))}
