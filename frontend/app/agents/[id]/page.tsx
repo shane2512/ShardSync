@@ -65,37 +65,48 @@ function NewVersionModal({ agentId, registryObjectId, latestConfig, onClose, onS
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-      <div className="card" style={{ width: "100%", maxWidth: "640px", padding: "32px", cursor: "default", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: 700 }}>New Version</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "22px" }}>×</button>
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm">
+      <div className="clay-card w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-headline-md text-headline-md">New Version</h2>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-primary material-symbols-outlined text-2xl">close</button>
         </div>
 
-        <div style={{ display: "grid", gap: "16px" }}>
+        <div className="grid gap-6">
           <div>
-            <label style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            <label className="flex justify-between font-label-mono text-label-mono text-on-surface-variant mb-2 tracking-wider uppercase">
               <span>Config JSON</span>
-              {configError && <span style={{ color: "var(--accent-rose)", textTransform: "none", fontWeight: 400 }}>{configError}</span>}
+              {configError && <span className="text-error normal-case tracking-normal">{configError}</span>}
             </label>
-            <textarea value={config} onChange={(e) => validate(e.target.value)} rows={10}
-              style={{ width: "100%", padding: "14px", background: "#0d0e14", border: `1px solid ${configError ? "rgba(251,113,133,0.4)" : "var(--border-subtle)"}`, borderRadius: "12px", color: "var(--accent-cyan)", fontSize: "12px", fontFamily: "var(--font-mono)", outline: "none", resize: "vertical", lineHeight: "1.6" }} />
+            <div className="bg-[#1b1b1b] rounded-2xl p-4 shadow-[inset_0_8px_16px_rgba(0,0,0,0.2),0_4px_8px_rgba(255,255,255,0.8)]">
+              <textarea 
+                value={config} onChange={(e) => validate(e.target.value)} rows={10}
+                className="w-full bg-transparent text-secondary-fixed font-label-mono text-[13px] leading-relaxed resize-y outline-none border-none"
+                spellCheck="false"
+              />
+            </div>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Commit Message</label>
-            <input value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)} placeholder="e.g. Added SUI/USDC pair support"
-              style={{ width: "100%", padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "14px", outline: "none" }} />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2 tracking-wider uppercase">Commit Message</label>
+            <input 
+              value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)} 
+              placeholder="e.g. Added SUI/USDC pair support"
+              className="w-full clay-inset px-4 py-3 font-body-md outline-none"
+            />
           </div>
 
-          {phase === "done" && <div className="badge badge-success" style={{ justifyContent: "center", padding: "12px" }}>✓ Version created on-chain!</div>}
-          {phase === "error" && <div style={{ color: "var(--accent-rose)", fontSize: "13px", padding: "12px", background: "rgba(251,113,133,0.08)", borderRadius: "8px" }}>✕ {errorMsg}</div>}
+          {phase === "done" && <div className="p-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold flex gap-2"><span className="material-symbols-outlined">check_circle</span> Version created on-chain!</div>}
+          {phase === "error" && <div className="p-4 bg-error/10 text-error rounded-xl flex gap-2"><span className="material-symbols-outlined">error</span> {errorMsg}</div>}
 
-          <button onClick={handleSubmit} disabled={!commitMsg.trim() || !!configError || phase !== "idle"} className="btn-primary"
-            style={{ width: "100%", padding: "13px", fontSize: "14px", opacity: (!commitMsg.trim() || !!configError || phase !== "idle") ? 0.5 : 1 }}>
-            {phase === "idle" && "△ Upload & Sign New Version"}
+          <button 
+            onClick={handleSubmit} 
+            disabled={!commitMsg.trim() || !!configError || phase !== "idle"} 
+            className="w-full py-4 clay-button-primary text-white flex items-center justify-center gap-2 font-headline-sm disabled:opacity-50"
+          >
+            {phase === "idle" && <><span className="material-symbols-outlined">upload</span> Upload & Sign New Version</>}
             {phase === "uploading" && "Uploading to Walrus..."}
             {phase === "signing" && "Waiting for wallet signature..."}
-            {phase === "done" && "✓ Done!"}
+            {phase === "done" && "Done!"}
             {phase === "error" && "Retry"}
           </button>
         </div>
@@ -150,42 +161,51 @@ function ForkModal({ sourceVersion, onClose, onSuccess }: {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-      <div className="card" style={{ width: "100%", maxWidth: "520px", padding: "32px", cursor: "default" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: 700 }}>Fork Agent</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "22px" }}>×</button>
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm">
+      <div className="clay-card w-full max-w-xl p-8">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="font-headline-md text-headline-md">Fork Agent</h2>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-primary material-symbols-outlined text-2xl">close</button>
         </div>
-        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "24px" }}>
-          Forking from <span className="mono" style={{ color: "var(--accent-cyan)" }}>v{sourceVersion.fields.version_number}</span> — "{sourceVersion.fields.commit_message}"
+        <p className="text-sm text-on-surface-variant mb-6">
+          Forking from <span className="font-label-mono font-bold text-secondary">v{sourceVersion.fields.version_number}</span> — "{sourceVersion.fields.commit_message}"
         </p>
 
-        <div style={{ display: "grid", gap: "16px" }}>
+        <div className="grid gap-6">
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>New Agent Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="my-forked-agent"
-              style={{ width: "100%", padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "14px", fontFamily: "var(--font-mono)", outline: "none" }} />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2 tracking-wider uppercase">New Agent Name</label>
+            <input 
+              value={name} onChange={(e) => setName(e.target.value)} placeholder="my-forked-agent"
+              className="w-full clay-inset px-4 py-3 font-body-md outline-none" 
+            />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</label>
-            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's different about this fork?"
-              style={{ width: "100%", padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "14px", outline: "none" }} />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2 tracking-wider uppercase">Description</label>
+            <input 
+              value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's different about this fork?"
+              className="w-full clay-inset px-4 py-3 font-body-md outline-none" 
+            />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Commit Message</label>
-            <input value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)}
-              style={{ width: "100%", padding: "12px 16px", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "14px", outline: "none" }} />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2 tracking-wider uppercase">Commit Message</label>
+            <input 
+              value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)}
+              className="w-full clay-inset px-4 py-3 font-body-md outline-none" 
+            />
           </div>
 
-          {phase === "done" && <div className="badge badge-success" style={{ justifyContent: "center", padding: "12px" }}>✓ Fork created on-chain!</div>}
-          {phase === "error" && <div style={{ color: "var(--accent-rose)", fontSize: "13px", padding: "12px", background: "rgba(251,113,133,0.08)", borderRadius: "8px" }}>✕ {errorMsg}</div>}
+          {phase === "done" && <div className="p-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold flex gap-2"><span className="material-symbols-outlined">check_circle</span> Fork created on-chain!</div>}
+          {phase === "error" && <div className="p-4 bg-error/10 text-error rounded-xl flex gap-2"><span className="material-symbols-outlined">error</span> {errorMsg}</div>}
 
-          <button onClick={handleSubmit} disabled={!name.trim() || !description.trim() || phase !== "idle"} className="btn-primary"
-            style={{ width: "100%", padding: "13px", fontSize: "14px", opacity: (!name.trim() || !description.trim() || phase !== "idle") ? 0.5 : 1 }}>
-            {phase === "idle" && "⑂ Upload & Sign Fork"}
+          <button 
+            onClick={handleSubmit} 
+            disabled={!name.trim() || !description.trim() || phase !== "idle"} 
+            className="w-full py-4 clay-button-primary text-white flex items-center justify-center gap-2 font-headline-sm disabled:opacity-50"
+          >
+            {phase === "idle" && <><span className="material-symbols-outlined">fork_right</span> Upload & Sign Fork</>}
             {phase === "uploading" && "Uploading config to Walrus..."}
             {phase === "signing" && "Waiting for wallet signature..."}
-            {phase === "done" && "✓ Done!"}
+            {phase === "done" && "Done!"}
             {phase === "error" && "Retry"}
           </button>
         </div>
@@ -291,6 +311,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleViewBlob = async (blobId: string) => {
+    setBlobView({ id: blobId, content: "Loading..." });
     try {
       const res = await readBlob(blobId);
       setBlobView({ id: blobId, content: res.content || "(blob not available)" });
@@ -300,6 +321,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const handleDiff = async (leftIdx: number, rightIdx: number) => {
     const left = versions[leftIdx], right = versions[rightIdx];
     setDiffBlobs({ left: left.fields.walrus_config_blob_id, right: right.fields.walrus_config_blob_id, leftVer: `v${left.fields.version_number}`, rightVer: `v${right.fields.version_number}` });
+    setDiffContent(null);
     try {
       const [l, r] = await Promise.all([readBlob(left.fields.walrus_config_blob_id), readBlob(right.fields.walrus_config_blob_id)]);
       setDiffContent({ left: l.content || "(unavailable)", right: r.content || "(unavailable)" });
@@ -312,17 +334,19 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const latestBlobId = versions[0]?.fields.walrus_config_blob_id || "";
 
   if (loading) return (
-    <div className="page-container" style={{ paddingTop: "24px" }}>
-      <div className="skeleton" style={{ height: "32px", width: "200px", marginBottom: "16px" }} />
-      <div className="skeleton" style={{ height: "16px", width: "400px", marginBottom: "32px" }} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
-        {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "16px" }} />)}
+    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+      <div className="w-48 h-8 bg-surface-container-high animate-pulse rounded-lg mb-4"></div>
+      <div className="w-96 h-4 bg-surface-container-high animate-pulse rounded-lg mb-12"></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="clay-card h-48 animate-pulse"></div>
+        <div className="clay-card h-48 animate-pulse"></div>
+        <div className="clay-card h-48 animate-pulse"></div>
       </div>
     </div>
   );
 
   return (
-    <div className="page-container" style={{ paddingTop: "24px" }}>
+    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
       {/* Modals */}
       {showNewVersion && (
         <NewVersionModal
@@ -338,152 +362,254 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           onSuccess={() => { setForkVersion(null); }}
         />
       )}
-
-      <Link href="/agents" style={{ color: "var(--text-secondary)", fontSize: "14px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "24px" }}>← Back to Agents</Link>
-
-      {/* Header */}
-      <div className="animate-fade-in" style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "32px" }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "4px" }}>
-            <span className="mono" style={{ color: "var(--accent-cyan)" }}>{name}</span>
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>{desc}</p>
-          <p className="mono" style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>ID: {shortenId(id)}</p>
+      {blobView && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm" onClick={() => setBlobView(null)}>
+          <div className="clay-card w-full max-w-4xl p-8 max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-headline-md text-headline-md font-label-mono text-[16px]">Blob: {blobView.id}</h2>
+              <button onClick={() => setBlobView(null)} className="text-on-surface-variant hover:text-primary material-symbols-outlined text-2xl">close</button>
+            </div>
+            <div className="bg-[#1b1b1b] rounded-2xl p-6 shadow-[inset_0_8px_16px_rgba(0,0,0,0.2),0_4px_8px_rgba(255,255,255,0.8)] overflow-auto flex-1">
+              <pre className="text-secondary-fixed font-label-mono text-[13px] leading-relaxed whitespace-pre-wrap">{blobView.content}</pre>
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+      )}
+      {diffBlobs && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm" onClick={() => setDiffBlobs(null)}>
+          <div className="clay-card w-full max-w-[90vw] p-8 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-headline-md text-headline-md flex items-center gap-4">
+                <span className="px-3 py-1 bg-surface-container rounded-md font-label-mono text-sm">{diffBlobs.leftVer}</span>
+                <span className="material-symbols-outlined">arrow_right_alt</span>
+                <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-md font-label-mono text-sm">{diffBlobs.rightVer}</span>
+              </h2>
+              <button onClick={() => setDiffBlobs(null)} className="text-on-surface-variant hover:text-primary material-symbols-outlined text-2xl">close</button>
+            </div>
+            <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
+              <div className="bg-[#1b1b1b] rounded-2xl p-6 shadow-[inset_0_8px_16px_rgba(0,0,0,0.2),0_4px_8px_rgba(255,255,255,0.8)] overflow-auto">
+                <div className="text-on-tertiary-fixed-variant font-label-mono text-[11px] mb-4 uppercase tracking-widest text-center border-b border-on-tertiary-fixed-variant/20 pb-2">{diffBlobs.left}</div>
+                <pre className="text-secondary-fixed font-label-mono text-[13px] leading-relaxed whitespace-pre-wrap">{diffContent ? diffContent.left : "Loading..."}</pre>
+              </div>
+              <div className="bg-[#1b1b1b] rounded-2xl p-6 shadow-[inset_0_8px_16px_rgba(0,0,0,0.2),0_4px_8px_rgba(255,255,255,0.8)] overflow-auto">
+                <div className="text-on-tertiary-fixed-variant font-label-mono text-[11px] mb-4 uppercase tracking-widest text-center border-b border-on-tertiary-fixed-variant/20 pb-2">{diffBlobs.right}</div>
+                <pre className="text-secondary-fixed font-label-mono text-[13px] leading-relaxed whitespace-pre-wrap">{diffContent ? diffContent.right : "Loading..."}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Breadcrumb & Back Action */}
+      <Link href="/agents" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-secondary mb-8 transition-colors cursor-pointer group no-underline">
+        <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+        <span className="font-label-mono text-label-mono">Back to Agents</span>
+      </Link>
+
+      {/* Header Section */}
+      <section className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-8">
+        <div>
+          <h1 className="font-headline-lg text-headline-lg text-primary mb-2">{name}</h1>
+          <p className="text-on-surface-variant font-body-lg max-w-2xl mb-4">{desc}</p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-full">
+              <span className="material-symbols-outlined text-[16px] text-secondary">fingerprint</span>
+              <span className="font-label-mono text-label-mono opacity-60">ID: {shortenId(id, 6)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-600 font-label-mono text-label-mono">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Status: Active
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-4">
           {isConnected && (
             <>
-              <button className="btn-secondary" onClick={() => setShowNewVersion(true)} style={{ fontSize: "13px" }}>
-                △ New Version
+              <button onClick={() => setShowNewVersion(true)} className="flex items-center gap-2 px-6 py-3 clay-button-secondary rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform">
+                <span className="material-symbols-outlined">add_circle</span>
+                New Version
               </button>
               {versions.length > 0 && (
-                <button className="btn-secondary" onClick={() => setForkVersion(versions[0])} style={{ fontSize: "13px" }}>
-                  ⑂ Fork
+                <button onClick={() => setForkVersion(versions[0])} className="flex items-center gap-2 px-6 py-3 clay-button-secondary rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform">
+                  <span className="material-symbols-outlined">fork_right</span>
+                  Fork
                 </button>
               )}
             </>
           )}
-          <button className="btn-primary" onClick={handleRun} disabled={running} style={{ opacity: running ? 0.5 : 1 }}>
-            {running ? "Running..." : "▶ Run Agent"}
+          <button onClick={handleRun} disabled={running || versions.length === 0} className={`flex items-center gap-2 px-8 py-3 clay-button-primary rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform ${running || versions.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+            {running ? "Running..." : "Run Agent"}
           </button>
         </div>
-      </div>
+      </section>
 
       {!isConnected && (
-        <div style={{ padding: "12px 16px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "10px", fontSize: "13px", color: "var(--accent-amber)", marginBottom: "24px" }}>
-          ⚡ Connect your wallet to add versions or fork this agent
+        <div className="clay-card p-4 mb-8 bg-orange-50/50 flex items-center gap-3">
+          <span className="material-symbols-outlined text-orange-500">link_off</span>
+          <span className="text-sm font-medium">Connect your wallet to add versions or fork this agent</span>
         </div>
       )}
 
       {runResult && (
-        <div className="card" style={{ padding: "14px 20px", marginBottom: "24px", cursor: "default", borderColor: runResult.startsWith("✓") ? "rgba(52,211,153,0.3)" : "rgba(251,113,133,0.3)" }}>
-          <span style={{ fontSize: "14px", color: runResult.startsWith("✓") ? "var(--accent-emerald)" : "var(--accent-rose)" }}>{runResult}</span>
+        <div className={`clay-card p-4 mb-8 border ${runResult.startsWith("✓") ? "bg-emerald-50/50 border-emerald-200 text-emerald-700" : "bg-error/5 border-error/20 text-error"} flex items-center gap-3`}>
+          <span className="material-symbols-outlined">{runResult.startsWith("✓") ? "check_circle" : "error"}</span>
+          <span className="text-sm font-medium">{runResult}</span>
         </div>
       )}
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px", marginBottom: "32px" }}>
-        {[
-          { label: "Versions", value: versionCount, color: "var(--accent-indigo)" },
-          { label: "Executions", value: String(executions.length), color: "var(--accent-cyan)" },
-          { label: "Success Rate", value: executions.length ? `${Math.round((executions.filter(e => e.success).length / executions.length) * 100)}%` : "—", color: "var(--accent-emerald)" },
-        ].map(s => (
-          <div key={s.label} className="card" style={{ padding: "20px", cursor: "default", borderTop: `2px solid ${s.color}` }}>
-            <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>{s.label}</div>
-            <div style={{ fontSize: "28px", fontWeight: 700 }}>{s.value}</div>
+      {/* Metrics Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-12">
+        <div className="clay-card p-8 rounded-[32px] flex flex-col justify-between h-48">
+          <span className="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest">Versions</span>
+          <div className="flex items-end justify-between">
+            <span className="font-headline-lg text-headline-lg">{versionCount}</span>
+            <span className="material-symbols-outlined text-surface-variant text-[48px]">history</span>
           </div>
-        ))}
-      </div>
-
-      {/* Version History */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>Version History</div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          {versions.length > 1 && (
-            <button className="btn-secondary" onClick={() => handleDiff(0, 1)} style={{ fontSize: "12px", padding: "6px 12px" }}>
-              ⇄ Diff v{versions[0]?.fields.version_number} vs v{versions[1]?.fields.version_number}
-            </button>
-          )}
         </div>
-      </div>
+        <div className="clay-card p-8 rounded-[32px] flex flex-col justify-between h-48">
+          <span className="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest">Executions</span>
+          <div className="flex items-end justify-between">
+            <span className="font-headline-lg text-headline-lg">{executions.length}</span>
+            <span className="material-symbols-outlined text-surface-variant text-[48px]">terminal</span>
+          </div>
+        </div>
+        <div className="clay-card p-8 rounded-[32px] flex flex-col justify-between h-48">
+          <span className="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest">Success Rate</span>
+          <div className="flex items-end justify-between">
+            <span className="font-headline-lg text-headline-lg">
+              {executions.length ? `${Math.round((executions.filter(e => e.success).length / executions.length) * 100)}%` : "—"}
+            </span>
+            <span className="material-symbols-outlined text-secondary text-[48px]">verified</span>
+          </div>
+        </div>
+      </section>
 
-      <div style={{ display: "grid", gap: "8px", marginBottom: "32px" }}>
-        {versions.map((v, i) => (
-          <div key={v.objectId} className="card animate-slide-up"
-            style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "60px 1fr auto auto", alignItems: "center", gap: "16px", cursor: "default", animationDelay: `${i * 0.05}s`, opacity: 0 }}>
-            <span className="badge badge-info" style={{ justifyContent: "center" }}>v{v.fields.version_number}</span>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 500 }}>{v.fields.commit_message}</div>
-              <div className="mono" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px", cursor: "pointer", textDecoration: "underline", textDecorationColor: "var(--border-subtle)" }}
-                onClick={() => handleViewBlob(v.fields.walrus_config_blob_id)}>
-                blob: {shortenId(v.fields.walrus_config_blob_id, 8)}
-              </div>
-            </div>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{timeAgo(v.fields.created_at)}</span>
-            {/* Fork from this version */}
-            {isConnected && (
-              <button onClick={() => setForkVersion(v)} className="btn-secondary"
-                style={{ fontSize: "11px", padding: "4px 10px" }}>
-                ⑂ Fork
+      {/* Lists Bento Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+        {/* Version History (7 Cols) */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-headline-sm text-headline-sm uppercase tracking-wider text-on-surface-variant">Version History</h2>
+            {versions.length >= 2 && (
+              <button onClick={() => handleDiff(1, 0)} className="flex items-center gap-2 px-4 py-1.5 clay-button-secondary rounded-full font-label-mono text-label-mono">
+                <span className="material-symbols-outlined text-[18px]">compare_arrows</span>
+                Diff v{versions[1].fields.version_number} vs v{versions[0].fields.version_number}
               </button>
             )}
           </div>
-        ))}
-        {versions.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>No versions found</p>}
-      </div>
+          
+          {versions.length === 0 ? (
+            <div className="clay-card p-12 rounded-[24px] text-center text-on-surface-variant italic">No versions found.</div>
+          ) : (
+            versions.map((v, i) => (
+              <div key={v.objectId} className="clay-card p-6 rounded-[24px] flex flex-col sm:flex-row items-start sm:items-center justify-between hover:translate-x-2 transition-transform duration-200 gap-4">
+                <div className="flex items-center gap-6 w-full sm:w-auto overflow-hidden">
+                  <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl font-label-mono text-headline-sm ${i === 0 ? "bg-secondary-container text-on-secondary-container" : "clay-inset text-on-surface"}`}>
+                    v{v.fields.version_number}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-headline-sm text-headline-sm mb-1 truncate">{v.fields.commit_message || "No commit message"}</h3>
+                    <div className="flex items-center gap-2 opacity-50 font-label-mono text-label-mono truncate">
+                      <span className="material-symbols-outlined text-[14px]">link</span>
+                      <span onClick={() => handleViewBlob(v.fields.walrus_config_blob_id)} className="cursor-pointer hover:underline hover:text-secondary truncate">
+                        blob: {shortenId(v.fields.walrus_config_blob_id, 10)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
+                  <span className="text-on-surface-variant text-label-mono">{timeAgo(v.fields.created_at)}</span>
+                  {isConnected && (
+                    <button onClick={() => setForkVersion(v)} className="flex items-center gap-1 px-3 py-1 clay-inset rounded-full text-label-mono hover:bg-surface-container-highest transition-colors">
+                      <span className="material-symbols-outlined text-[16px]">fork_right</span> Fork
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-      {/* Blob Viewer */}
-      {blobView && (
-        <div style={{ marginBottom: "32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>Blob Content</div>
-            <button onClick={() => setBlobView(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "18px" }}>×</button>
+        {/* Executions (5 Cols) */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-headline-sm text-headline-sm uppercase tracking-wider text-on-surface-variant">Recent Executions</h2>
           </div>
-          <div className="code-block">
-            <div className="mono" style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "8px" }}>blob: {blobView.id}</div>
-            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{blobView.content}</pre>
+          
+          {executions.length === 0 ? (
+            <div className="clay-card p-12 rounded-[24px] text-center text-on-surface-variant italic">No executions recorded.</div>
+          ) : (
+            executions.map((e, i) => (
+              <div key={i} className="clay-card p-6 rounded-[24px] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className={`flex items-center gap-3 px-4 py-1 rounded-full font-label-mono text-label-mono ${e.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {e.success ? "check_circle" : "error"}
+                    </span>
+                    {e.success ? "Pass" : "Fail"}
+                  </div>
+                  <span className="text-on-surface-variant text-label-mono text-[11px] uppercase tracking-widest">{String(e.duration_ms)}ms</span>
+                </div>
+                <div 
+                  onClick={() => handleViewBlob(String(e.walrus_log_blob_id))}
+                  className="clay-inset p-4 rounded-xl font-label-mono text-label-mono text-on-surface-variant overflow-x-auto whitespace-nowrap cursor-pointer hover:bg-surface-container-highest transition-colors"
+                >
+                  log: {shortenId(String(e.walrus_log_blob_id), 12)}
+                </div>
+                <div className="flex justify-between text-label-mono text-[11px] uppercase tracking-widest opacity-40">
+                  <span>Cluster: Sui-Testnet</span>
+                  <span>v: {shortenId(String(e.version_id), 6)}</span>
+                </div>
+              </div>
+            ))
+          )}
+          
+          {/* Atmospheric Design Element */}
+          <div className="relative clay-card p-8 rounded-[32px] overflow-hidden group mt-4">
+            <div className="relative z-10">
+              <h4 className="font-headline-sm text-headline-sm text-primary mb-2">Network Health</h4>
+              <p className="text-body-md text-on-surface-variant mb-4">Cluster performance is nominal across 48 global nodes.</p>
+              <div className="w-full h-2 clay-inset rounded-full overflow-hidden">
+                <div className="h-full bg-secondary w-[92%] rounded-full"></div>
+              </div>
+            </div>
+            <div className="absolute -right-12 -bottom-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+              <span className="material-symbols-outlined text-[200px]">language</span>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Diff Viewer */}
-      {diffContent && diffBlobs && (
-        <div style={{ marginBottom: "32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>Config Diff: {diffBlobs.rightVer} → {diffBlobs.leftVer}</div>
-            <button onClick={() => { setDiffContent(null); setDiffBlobs(null); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "18px" }}>×</button>
+      {/* System Visualization */}
+      <section className="mt-16">
+        <h2 className="font-headline-sm text-headline-sm uppercase tracking-wider text-on-surface-variant mb-6 text-center">
+          Global Agent Distribution
+        </h2>
+        <div className="w-full h-[400px] clay-card rounded-[48px] overflow-hidden relative">
+          <div className="absolute inset-0 bg-[#f0f0f0] flex items-center justify-center">
+            <img 
+              alt="Network Map" 
+              className="w-full h-full object-cover mix-blend-multiply opacity-20 grayscale" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuPOasLh_ceJ2qNP-mnJn7Aa39NrOelGojAmyXbNLaFD3uHG9STzharhZTWmHDEg7YfV0zrioZXjw8U7u8jqFzgjq6vPEjlkt2fsRrVbJxOiUJzUHbjGUQ6Ky1VwYuBuWN7JC9bhaqDE4E8A3GPNB4YlrdWioz1vu0_66rdZH0V6jgz_YxOPEySlcvidA9ZaI_Vy7Pu6SJ_0ckXsVl_FuK8M9J6J7RzRCOKIGdO4nnfBzicpj6pvfmgyMGlxtLIbF9TkTqfSk9Cis"
+            />
+            {/* Interactive Hotspots */}
+            <div className="absolute top-1/4 left-1/3 w-4 h-4 bg-secondary rounded-full shadow-[0_0_20px_rgba(70,72,212,0.6)] animate-ping"></div>
+            <div className="absolute top-1/2 left-2/3 w-4 h-4 bg-secondary rounded-full shadow-[0_0_20px_rgba(70,72,212,0.6)] animate-ping" style={{ animationDelay: "0.5s" }}></div>
+            <div className="absolute bottom-1/3 left-1/2 w-4 h-4 bg-secondary rounded-full shadow-[0_0_20px_rgba(70,72,212,0.6)] animate-ping" style={{ animationDelay: "1.2s" }}></div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <div>
-              <div className="badge badge-warning" style={{ marginBottom: "8px" }}>{diffBlobs.rightVer} (previous)</div>
-              <div className="code-block"><pre style={{ whiteSpace: "pre-wrap" }}>{diffContent.right}</pre></div>
+          <div className="absolute bottom-8 right-8 p-6 clay-card rounded-2xl flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-secondary"></div>
+              <span className="font-label-mono text-label-mono">Sui Testnet Cluster</span>
             </div>
-            <div>
-              <div className="badge badge-info" style={{ marginBottom: "8px" }}>{diffBlobs.leftVer} (latest)</div>
-              <div className="code-block"><pre style={{ whiteSpace: "pre-wrap" }}>{diffContent.left}</pre></div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-surface-container-highest"></div>
+              <span className="font-label-mono text-label-mono">Mainnet Nodes</span>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Executions */}
-      <div className="section-title">Executions</div>
-      <div style={{ display: "grid", gap: "8px" }}>
-        {executions.map((e, i) => (
-          <div key={i} className="card" style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "16px", cursor: "default" }}>
-            <span className={`badge ${e.success ? "badge-success" : "badge-error"}`}>{e.success ? "✓ Pass" : "✕ Fail"}</span>
-            <div 
-              className="mono" 
-              style={{ fontSize: "12px", color: "var(--text-muted)", cursor: "pointer", textDecoration: "underline", textDecorationColor: "var(--border-subtle)" }}
-              onClick={() => handleViewBlob(String(e.walrus_log_blob_id || ""))}
-            >
-              log: {shortenId(String(e.walrus_log_blob_id || ""), 8)}
-            </div>
-            <span className="mono" style={{ fontSize: "12px", color: "var(--text-muted)" }}>ver: {shortenId(String(e.version_id || ""))}</span>
-          </div>
-        ))}
-        {executions.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>No executions yet. Click "Run Agent" to simulate one.</p>}
-      </div>
+      </section>
     </div>
   );
 }

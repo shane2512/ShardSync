@@ -18,17 +18,18 @@ interface AgentStats {
 }
 
 const CHART_COLORS = {
-  indigo: "#6366f1",
-  cyan: "#22d3ee",
-  emerald: "#34d399",
-  rose: "#fb7185",
-  purple: "#a78bfa",
-  amber: "#fbbf24",
+  indigo: "#4648d4",
+  cyan: "#2dd4bf",
+  emerald: "#22c55e",
+  rose: "#ba1a1a",
+  purple: "#6063ee",
+  amber: "#f59e0b",
 };
 
 const tooltipStyle = {
-  contentStyle: { background: "#161822", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", fontSize: "13px", color: "#f0f0f5" },
-  itemStyle: { color: "#8b8fa3" },
+  contentStyle: { background: "#ffffff", border: "none", borderRadius: "16px", fontSize: "13px", color: "#1b1b1b", boxShadow: "0 10px 20px rgba(0,0,0,0.1), inset 2px 2px 4px rgba(255,255,255,1)" },
+  itemStyle: { color: "#4c4546", fontFamily: "JetBrains Mono, monospace" },
+  cursor: { fill: "#f3f3f3" }
 };
 
 export default function AnalyticsPage() {
@@ -40,7 +41,6 @@ export default function AnalyticsPage() {
 
   const load = useCallback(async () => {
     try {
-      // Serialize calls to avoid Tatum rate limits
       const healthRes = await checkHealth();
       const agentsRes = owner ? await listAgents(owner) : { data: [] };
       const versionsRes = owner ? await listVersions(owner) : { data: [] };
@@ -116,133 +116,228 @@ export default function AnalyticsPage() {
     { name: "Fail", value: 100 - overview.successRate },
   ];
 
+  if (loading) {
+    return (
+      <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+        <div className="w-48 h-8 bg-surface-container-high animate-pulse rounded-lg mb-4"></div>
+        <div className="w-96 h-4 bg-surface-container-high animate-pulse rounded-lg mb-12"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter mb-10">
+          {[1,2,3,4,5].map(i => <div key={i} className={`clay-card h-40 animate-pulse ${i === 5 ? 'lg:col-span-1 md:col-span-2' : ''}`}></div>)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-10">
+          <div className="lg:col-span-2 clay-card h-[400px] animate-pulse"></div>
+          <div className="clay-card h-[400px] animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="page-container" style={{ paddingTop: "24px" }}>
-      <div className="animate-fade-in" style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "4px" }}>Analytics</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-          Real-time metrics from Sui testnet via Tatum Data API
+    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+      {/* Page Header */}
+      <div className="mb-10">
+        <h1 className="font-headline-lg text-headline-lg text-primary mb-2">Analytics</h1>
+        <p className="font-body-lg text-on-surface-variant max-w-2xl">
+          Real-time metrics from Sui testnet via Tatum Data API. Monitor performance, version history, and execution stability across your shard network.
         </p>
       </div>
 
-      {/* Overview Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "32px" }}>
-        {[
-          { label: "Agents", value: overview.agents, color: CHART_COLORS.indigo, icon: "◆" },
-          { label: "Versions", value: overview.versions, color: CHART_COLORS.cyan, icon: "△" },
-          { label: "Executions", value: overview.executions, color: CHART_COLORS.emerald, icon: "▶" },
-          { label: "Success Rate", value: `${overview.successRate}%`, color: overview.successRate >= 90 ? CHART_COLORS.emerald : CHART_COLORS.amber, icon: "✓" },
-          { label: "Checkpoint", value: parseInt(overview.checkpoint || "0").toLocaleString(), color: CHART_COLORS.purple, icon: "⬡" },
-        ].map((s) => (
-          <div key={s.label} className="card animate-slide-up" style={{ padding: "20px", cursor: "default", borderTop: `2px solid ${s.color}` }}>
-            {loading ? <div className="skeleton" style={{ height: "40px" }} /> : (
-              <>
-                <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>{s.icon} {s.label}</div>
-                <div style={{ fontSize: "28px", fontWeight: 700, color: s.color }}>{s.value}</div>
-              </>
+      {/* Top-Level Metric Grid (Claymorphic Cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter mb-10">
+        <div className="clay-card p-6 flex flex-col justify-between h-40 group">
+          <div className="flex justify-between items-start">
+            <span className="font-label-mono text-[12px] text-secondary font-bold uppercase tracking-widest">Agents</span>
+            <span className="material-symbols-outlined text-outline group-hover:text-secondary transition-colors">memory</span>
+          </div>
+          <div className="font-headline-lg text-[48px] text-primary leading-none">{overview.agents}</div>
+          <div className="flex items-center gap-1 text-[12px] text-secondary">
+            <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+            <span>Total indexed</span>
+          </div>
+        </div>
+
+        <div className="clay-card p-6 flex flex-col justify-between h-40 group">
+          <div className="flex justify-between items-start">
+            <span className="font-label-mono text-[12px] text-secondary font-bold uppercase tracking-widest">Versions</span>
+            <span className="material-symbols-outlined text-outline group-hover:text-secondary transition-colors">history_edu</span>
+          </div>
+          <div className="font-headline-lg text-[48px] text-primary leading-none">{overview.versions}</div>
+          <div className="flex items-center gap-1 text-[12px] text-outline">
+            <span>Registered</span>
+          </div>
+        </div>
+
+        <div className="clay-card p-6 flex flex-col justify-between h-40 group">
+          <div className="flex justify-between items-start">
+            <span className="font-label-mono text-[12px] text-secondary font-bold uppercase tracking-widest">Executions</span>
+            <span className="material-symbols-outlined text-outline group-hover:text-secondary transition-colors">bolt</span>
+          </div>
+          <div className="font-headline-lg text-[48px] text-primary leading-none">{overview.executions}</div>
+          <div className="flex items-center gap-1 text-[12px] text-outline">
+            <span>Tracked</span>
+          </div>
+        </div>
+
+        <div className={`clay-card p-6 flex flex-col justify-between h-40 group border-2 border-transparent hover:border-secondary/10`}>
+          <div className="flex justify-between items-start">
+            <span className="font-label-mono text-[12px] text-secondary font-bold uppercase tracking-widest">Success Rate</span>
+            <span className="material-symbols-outlined text-outline group-hover:text-secondary transition-colors">check_circle</span>
+          </div>
+          <div className={`font-headline-lg text-[48px] ${overview.successRate >= 90 ? 'text-[#22c55e]' : 'text-amber-500'} leading-none`}>{overview.successRate}%</div>
+          <div className={`flex items-center gap-1 text-[12px] ${overview.successRate >= 90 ? 'text-[#22c55e]' : 'text-amber-500'}`}>
+            <span>Stability score</span>
+          </div>
+        </div>
+
+        <div className="clay-card p-6 flex flex-col justify-between h-40 group lg:col-span-1 md:col-span-2">
+          <div className="flex justify-between items-start">
+            <span className="font-label-mono text-[12px] text-secondary font-bold uppercase tracking-widest">Checkpoint</span>
+            <span className="material-symbols-outlined text-outline group-hover:text-secondary transition-colors">numbers</span>
+          </div>
+          <div className="font-headline-sm text-[24px] text-primary truncate" title={overview.checkpoint}>{overview.checkpoint || "—"}</div>
+          <div className="flex items-center gap-1 text-[12px] text-outline">
+            <span>Sui Testnet</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-10">
+        {/* Execution Activity Chart */}
+        <div className="lg:col-span-2 clay-card p-8 min-h-[400px] flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="font-headline-sm text-headline-sm text-primary mb-1">Execution Activity</h3>
+              <p className="font-label-mono text-[12px] text-on-tertiary-container uppercase">Frequency per minute</p>
+            </div>
+          </div>
+          <div className="flex-grow clay-inset p-6 relative">
+            {execTimeline.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={execTimeline}>
+                  <defs>
+                    <linearGradient id="gradSuccess" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.5} />
+                      <stop offset="100%" stopColor={CHART_COLORS.emerald} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradFail" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={CHART_COLORS.rose} stopOpacity={0.5} />
+                      <stop offset="100%" stopColor={CHART_COLORS.rose} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+                  <XAxis dataKey="time" stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} />
+                  <YAxis stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Area type="monotone" dataKey="success" stroke={CHART_COLORS.emerald} fill="url(#gradSuccess)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="fail" stroke={CHART_COLORS.rose} fill="url(#gradFail)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center font-label-mono text-outline">No execution data available</div>
             )}
           </div>
-        ))}
+        </div>
+
+        {/* Success Rate Ring */}
+        <div className="clay-card p-8 flex flex-col items-center justify-center text-center">
+          <h3 className="font-headline-sm text-headline-sm text-primary mb-1 self-start">Success Rate</h3>
+          <p className="font-label-mono text-[12px] text-on-tertiary-container uppercase mb-8 self-start">Integrity Score</p>
+          
+          {overview.executions > 0 ? (
+            <>
+              <div className="relative w-48 h-48 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value" strokeWidth={0} cornerRadius={4}>
+                      <Cell fill={CHART_COLORS.emerald} />
+                      <Cell fill={CHART_COLORS.rose} />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="font-headline-lg text-[40px] text-primary">{overview.successRate}%</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 w-full">
+                <div className="clay-inset p-3 rounded-xl">
+                  <p className="text-[10px] font-label-mono text-outline uppercase">Pass</p>
+                  <p className="font-headline-sm text-[16px] text-[#22c55e]">{execTimeline.reduce((acc, curr) => acc + curr.success, 0)}</p>
+                </div>
+                <div className="clay-inset p-3 rounded-xl">
+                  <p className="text-[10px] font-label-mono text-outline uppercase">Fail</p>
+                  <p className="font-headline-sm text-[16px] text-error">{execTimeline.reduce((acc, curr) => acc + curr.fail, 0)}</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-48 flex items-center justify-center font-label-mono text-outline">No data</div>
+          )}
+        </div>
       </div>
 
-      {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", marginBottom: "32px" }}>
-        {/* Execution Timeline Chart */}
-        <div className="card" style={{ padding: "24px", cursor: "default" }}>
-          <div className="section-title">Execution Activity</div>
-          {loading ? <div className="skeleton" style={{ height: "200px" }} /> : execTimeline.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={execTimeline}>
-                <defs>
-                  <linearGradient id="gradSuccess" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS.emerald} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={CHART_COLORS.emerald} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradFail" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS.rose} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={CHART_COLORS.rose} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="time" stroke="#565a6e" fontSize={11} />
-                <YAxis stroke="#565a6e" fontSize={11} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} />
-                <Area type="monotone" dataKey="success" stroke={CHART_COLORS.emerald} fill="url(#gradSuccess)" strokeWidth={2} />
-                <Area type="monotone" dataKey="fail" stroke={CHART_COLORS.rose} fill="url(#gradFail)" strokeWidth={2} />
-              </AreaChart>
+      {/* Versions Per Agent Section */}
+      <div className="clay-card p-8 mb-10">
+        <h3 className="font-headline-sm text-headline-sm text-primary mb-1">Versions per Agent</h3>
+        <p className="font-label-mono text-[12px] text-on-tertiary-container uppercase mb-8">Distribution of software releases</p>
+        <div className="h-72 clay-inset p-6 rounded-2xl">
+          {agentStats.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agentStats} barSize={32}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} />
+                <YAxis stroke="#7e7576" fontSize={11} fontFamily="JetBrains Mono, monospace" tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip {...tooltipStyle} cursor={{fill: 'rgba(0,0,0,0.02)'}} />
+                <Bar dataKey="versions" fill={CHART_COLORS.indigo} radius={[8, 8, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: "220px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>Run agents to see activity</div>
-          )}
-        </div>
-
-        {/* Success Rate Pie */}
-        <div className="card" style={{ padding: "24px", cursor: "default" }}>
-          <div className="section-title">Success Rate</div>
-          {loading ? <div className="skeleton" style={{ height: "200px" }} /> : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="value" strokeWidth={0}>
-                    <Cell fill={CHART_COLORS.emerald} />
-                    <Cell fill="rgba(251,113,133,0.3)" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{ fontSize: "32px", fontWeight: 800, marginTop: "-20px", color: CHART_COLORS.emerald }}>{overview.successRate}%</div>
-              <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>of {overview.executions} executions</div>
-            </div>
+             <div className="w-full h-full flex items-center justify-center font-label-mono text-outline">No agents available</div>
           )}
         </div>
       </div>
 
-      {/* Per-Agent Chart */}
-      <div className="card" style={{ padding: "24px", cursor: "default", marginBottom: "32px" }}>
-        <div className="section-title">Versions per Agent</div>
-        {loading ? <div className="skeleton" style={{ height: "200px" }} /> : agentStats.length > 0 ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={agentStats} barCategoryGap="20%">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" stroke="#565a6e" fontSize={12} fontFamily="JetBrains Mono, monospace" />
-              <YAxis stroke="#565a6e" fontSize={11} allowDecimals={false} />
-              <Tooltip {...tooltipStyle} />
-              <Bar dataKey="versions" fill={CHART_COLORS.indigo} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="executions" fill={CHART_COLORS.cyan} radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div style={{ height: "220px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No agents yet</div>
-        )}
-      </div>
-
-      {/* Agent Table */}
-      <div className="section-title">Agent Breakdown</div>
-      <div style={{ display: "grid", gap: "8px" }}>
-        {agentStats.map((a, i) => (
-          <Link key={a.objectId} href={`/agents/${a.objectId}`} className="card animate-slide-up"
-            style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr repeat(3, 80px) auto", alignItems: "center", gap: "16px", textDecoration: "none", color: "inherit", animationDelay: `${i * 0.05}s`, opacity: 0 }}>
-            <div>
-              <span className="mono" style={{ fontWeight: 600, color: "var(--accent-cyan)" }}>{a.name}</span>
-              <div className="mono" style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{shortenId(a.objectId)}</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "16px", fontWeight: 700 }}>{a.versions}</div>
-              <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase" }}>ver</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "16px", fontWeight: 700 }}>{a.executions}</div>
-              <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase" }}>exec</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: a.successRate >= 90 ? "var(--accent-emerald)" : "var(--accent-amber)" }}>{a.successRate}%</div>
-              <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase" }}>rate</div>
-            </div>
-            <a href={`https://suiscan.xyz/testnet/object/${a.objectId}`} target="_blank" rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()} style={{ fontSize: "12px", color: "var(--accent-indigo)", textDecoration: "none" }}>
-              Explorer ↗
-            </a>
-          </Link>
-        ))}
+      {/* Agent Breakdown List */}
+      <div className="mb-6">
+        <h3 className="font-label-mono text-[12px] text-on-tertiary-container uppercase tracking-widest mb-4">Agent Breakdown</h3>
+        <div className="space-y-4">
+          {agentStats.length > 0 ? (
+            agentStats.map((a, i) => (
+              <div key={a.objectId} className="clay-card p-6 flex flex-wrap items-center justify-between gap-6 hover:translate-x-1 transition-all duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-secondary-fixed rounded-2xl flex items-center justify-center text-secondary shadow-[inset_1px_1px_4px_rgba(255,255,255,0.8)]">
+                    <span className="material-symbols-outlined">smart_toy</span>
+                  </div>
+                  <div>
+                    <h4 className="font-headline-sm text-[18px] text-secondary">{a.name}</h4>
+                    <p className="font-label-mono text-[12px] text-outline">{shortenId(a.objectId, 12)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-8 md:gap-12">
+                  <div className="text-center">
+                    <p className="text-[10px] font-label-mono text-outline uppercase">Ver</p>
+                    <p className="font-headline-sm text-primary">{a.versions}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-label-mono text-outline uppercase">Exec</p>
+                    <p className="font-headline-sm text-primary">{a.executions}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-label-mono text-outline uppercase">Rate</p>
+                    <p className={`font-headline-sm ${a.executions === 0 ? 'text-outline' : (a.successRate >= 90 ? 'text-[#22c55e]' : 'text-amber-500')}`}>
+                      {a.executions === 0 ? 'N/A' : `${a.successRate}%`}
+                    </p>
+                  </div>
+                  <Link href={`/agents/${a.objectId}`} className="flex items-center gap-1 font-label-mono text-[12px] text-secondary hover:underline bg-surface-container-high px-3 py-1.5 rounded-full no-underline transition-colors">
+                    View <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                  </Link>
+                </div>
+              </div>
+            ))
+          ) : (
+             <div className="clay-card p-8 text-center font-label-mono text-outline">No agents registered</div>
+          )}
+        </div>
       </div>
     </div>
   );

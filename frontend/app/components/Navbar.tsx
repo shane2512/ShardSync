@@ -6,10 +6,10 @@ import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import { shortenId } from "../lib/api";
 
 const navLinks = [
-  { href: "/", label: "Dashboard", icon: "⬡" },
-  { href: "/agents", label: "Agents", icon: "◈" },
-  { href: "/timeline", label: "Timeline", icon: "◷" },
-  { href: "/analytics", label: "Analytics", icon: "◐" },
+  { href: "/", label: "Dashboard" },
+  { href: "/agents", label: "Agents" },
+  { href: "/timeline", label: "Timeline" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 export function Navbar() {
@@ -17,93 +17,49 @@ export function Navbar() {
   const account = useCurrentAccount();
 
   return (
-    <nav
-      className="glass"
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        height: "72px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 32px",
-        borderTop: "none",
-        borderLeft: "none",
-        borderRight: "none",
-        borderRadius: 0,
-      }}
-    >
-      {/* Logo */}
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-        <div style={{
-          width: "36px", height: "36px", borderRadius: "10px",
-          background: "var(--gradient-hero)", display: "flex",
-          alignItems: "center", justifyContent: "center",
-          fontSize: "18px", fontWeight: 800, color: "white",
-        }}>S</div>
-        <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>
-          Shard<span className="gradient-text">Sync</span>
-        </span>
-      </Link>
-
-      {/* Nav Links */}
-      <div style={{ display: "flex", gap: "4px" }}>
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
-          return (
-            <Link key={link.href} href={link.href} style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "8px 16px", borderRadius: "10px",
-              fontSize: "14px", fontWeight: isActive ? 600 : 400,
-              color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-              background: isActive ? "rgba(99, 102, 241, 0.1)" : "transparent",
-              border: isActive ? "1px solid rgba(99, 102, 241, 0.2)" : "1px solid transparent",
-              textDecoration: "none", transition: "all 0.2s",
-            }}>
-              <span style={{ fontSize: "16px" }}>{link.icon}</span>
-              {link.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Right side: wallet + network */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {/* Network badge */}
-        <div className="badge badge-info">
-          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: account ? "var(--accent-emerald)" : "var(--accent-indigo)" }} />
-          Sui Testnet
-        </div>
-
-        {/* Connected address chip */}
-        {account && (
-          <div className="mono" style={{
-            fontSize: "12px", color: "var(--accent-cyan)",
-            background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)",
-            borderRadius: "8px", padding: "6px 12px",
-          }}>
-            {shortenId(account.address)}
+    <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md">
+      <nav className="flex justify-between items-center w-full px-margin-desktop h-20 max-w-container-max mx-auto">
+        <div className="flex items-center gap-12">
+          <Link href="/" className="font-headline-md text-headline-md font-extrabold text-primary no-underline">
+            ShardSync
+          </Link>
+          <div className="hidden md:flex gap-8">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`font-label-mono text-label-mono pb-1 transition-colors duration-200 no-underline ${
+                    isActive 
+                      ? "text-secondary font-bold border-b-2 border-secondary" 
+                      : "text-on-surface-variant hover:text-secondary"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
-        )}
-
-        {/* dapp-kit ConnectButton — works with Slush + all Sui wallets */}
-        <div style={{ "--connect-wallet-button-color": "var(--accent-indigo)" } as React.CSSProperties}>
-          <ConnectButton
-            connectText="Connect Wallet"
-            style={{
-              background: account ? "var(--bg-card)" : "var(--gradient-hero)",
-              border: account ? "1px solid var(--border-subtle)" : "none",
-              color: "white", borderRadius: "10px",
-              padding: "8px 16px", fontSize: "13px",
-              fontWeight: 600, cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          />
         </div>
-      </div>
-    </nav>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-4 mr-2">
+            {account && (
+              <span className="font-label-mono text-[12px] text-secondary clay-inset px-3 py-1 rounded-full">
+                {shortenId(account.address)}
+              </span>
+            )}
+            <span className="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors">notifications</span>
+          </div>
+          
+          <div style={{ "--connect-wallet-button-color": "var(--color-on-secondary)", "--connect-wallet-button-background": "var(--color-secondary)" } as React.CSSProperties}>
+            <ConnectButton
+              connectText="Connect Wallet"
+              className="clay-button-primary px-6 py-2.5 rounded-full text-on-secondary font-label-mono text-label-mono active:scale-95 transition-transform"
+            />
+          </div>
+        </div>
+      </nav>
+    </header>
   );
 }
