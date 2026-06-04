@@ -20,8 +20,8 @@
 </p>
 
 <p>
-  <a href="https://shardsync.vercel.app"><strong>🚀 Live Demo</strong></a> ·
-  <a href="https://shardsync.vercel.app/docs"><strong>📖 Documentation</strong></a> ·
+  <a href="https://shardsync.vercel.app"><strong> Live Demo</strong></a> ·
+  <a href="https://shardsync.vercel.app/docs"><strong>Documentation</strong></a> ·
   <a href="https://github.com/shane2512/ShardSync/issues">Report Bug</a> ·
   <a href="https://github.com/shane2512/ShardSync/issues">Request Feature</a>
 </p>
@@ -30,7 +30,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [About the Project](#-about-the-project)
 - [Key Features](#-key-features)
@@ -50,7 +50,7 @@
 
 ---
 
-## 🧩 About the Project
+##  About the Project
 
 Autonomous AI agents are increasingly used for on-chain operations — managing portfolios, monitoring wallets, executing trades, and interacting with DeFi protocols. But their behavior is **opaque and hard to debug**.
 
@@ -66,21 +66,21 @@ There is no standard way to:
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Feature | Description |
 |---|---|
-| 🗂 **Version History** | Every config change creates an on-chain version. Browse, compare, and restore any snapshot. |
-| 🔀 **Agent Forking** | Clone any agent into a new independent registry. Experiment safely without affecting the original. |
-| ▶️ **Real Execution** | Trigger live Tatum MCP tool calls (`suix_getAllBalances`, `suix_queryTransactionBlocks`, etc.) with real chain data. |
-| 📊 **Diff Viewer** | Side-by-side JSON comparison of any two versions with color-coded additions and removals. |
-| 🔐 **Cryptographic Storage** | All blobs stored on Walrus with content-addressed IDs — tamper-evident by design. |
-| 📡 **On-chain Logs** | Execution outputs uploaded to Walrus; log blob IDs anchored on Sui for permanent audit trails. |
-| 💻 **Dashboard** | Full-featured Next.js dashboard: create, inspect, fork, run, and diff agents visually. |
+|  **Version History** | Every config change creates an on-chain version. Browse, compare, and restore any snapshot. |
+|  **Agent Forking** | Clone any agent into a new independent registry. Experiment safely without affecting the original. |
+|  **Real Execution** | Trigger live Tatum MCP tool calls (`suix_getAllBalances`, `suix_queryTransactionBlocks`, etc.) with real chain data. |
+|  **Diff Viewer** | Side-by-side JSON comparison of any two versions with color-coded additions and removals. |
+|  **Cryptographic Storage** | All blobs stored on Walrus with content-addressed IDs — tamper-evident by design. |
+|  **On-chain Logs** | Execution outputs uploaded to Walrus; log blob IDs anchored on Sui for permanent audit trails. |
+|  **Dashboard** | Full-featured Next.js dashboard: create, inspect, fork, run, and diff agents visually. |
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -117,7 +117,7 @@ There is no standard way to:
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 | Layer | Technology | Version | Purpose |
 |---|---|---|---|
@@ -131,7 +131,7 @@ There is no standard way to:
 
 ---
 
-## 📦 Deployed Contracts
+##  Deployed Contracts
 
 | Field | Value |
 |---|---|
@@ -142,7 +142,7 @@ There is no standard way to:
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -214,7 +214,7 @@ sui client publish --gas-budget 100000000
 
 ---
 
-## 🤖 Agent Configuration
+##  Agent Configuration
 
 When creating or updating an agent, you provide a JSON config blob:
 
@@ -244,7 +244,7 @@ When creating or updating an agent, you provide a JSON config blob:
 
 ---
 
-## 🔌 MCP Integration
+##  MCP Integration
 
 ShardSync uses `@tatumio/blockchain-mcp` **in-process** (not as a subprocess). The `DataService` and `TatumApiClient` classes are imported directly, making the integration cloud-native and deployment-safe.
 
@@ -266,7 +266,7 @@ The `.mcp.json` at the repo root enables MCP tool access in compatible editors (
 
 ---
 
-## 📡 API Reference
+##  API Reference
 
 All endpoints are prefixed with `/api`.
 
@@ -285,7 +285,7 @@ All endpoints are prefixed with `/api`.
 
 ---
 
-## ☁️ Deployment
+##  Deployment
 
 ShardSync is deployed using two free services:
 
@@ -310,7 +310,7 @@ ShardSync is deployed using two free services:
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 ShardSync/
@@ -348,7 +348,7 @@ ShardSync/
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Here's how to get started:
 
@@ -362,7 +362,7 @@ Please keep commits conventional (`feat:`, `fix:`, `docs:`, `refactor:`).
 
 ---
 
-## 📄 License
+##  License
 
 Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.
 
