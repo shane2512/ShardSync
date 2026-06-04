@@ -174,19 +174,30 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
       ? configWallet
       : targetWallet;
 
-    // 4. Map configurations to Tatum MCP tool arguments
+    // 4. Map configuration values to correct Tatum Data API field names
+    // NOTE: Tatum Data API uses "addresses" (plural) for portfolio and tx history tools.
+    // "get_wallet_portfolio" also requires tokenTypes.
+    // Chain identifiers: "sui-testnet" is not supported by the Data API — use gateway_execute_rpc for Sui specifics.
     const toolArgs: Record<string, any> = {};
-    if (toolToRun === "get_wallet_portfolio" || toolToRun === "get_transaction_history") {
-      toolArgs.address = queryAddress;
+    if (toolToRun === "get_transaction_history") {
+      toolArgs.addresses = queryAddress;  // plural — Tatum Data API requirement
       toolArgs.chain = targetChain;
-    } else if (toolToRun === "check_malicous_address") {
+    } else if (toolToRun === "get_wallet_portfolio") {
+      toolArgs.addresses = queryAddress;  // plural — Tatum Data API requirement
+      toolArgs.chain = targetChain;
+      toolArgs.tokenTypes = "native";     // required field
+    } else if (toolToRun === "check_malicous_address" || toolToRun === "check_malicious_address") {
       toolArgs.address = queryAddress;
+    } else if (toolToRun === "get_exchange_rate") {
+      toolArgs.symbol = "SUI";
+      toolArgs.basePair = "USD";
     } else if (toolToRun === "gateway_execute_rpc") {
       toolArgs.chain = targetChain;
       toolArgs.method = "suix_getBalance";
       toolArgs.params = [queryAddress];
     } else {
-      // Fallback mappings
+      // Generic fallback for other Data API tools
+      toolArgs.addresses = queryAddress;
       toolArgs.address = queryAddress;
       toolArgs.chain = targetChain;
     }
