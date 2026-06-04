@@ -211,6 +211,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
   const owner = useWalletAddress();
   const isConnected = useIsWalletConnected();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const loadData = async () => {
     try {
@@ -245,10 +246,43 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     setRunning(true); setRunResult(null);
     try {
       const res = await runAgent({ agentId: id, registryObjectId: id, versionObjectId: versions[0].objectId });
-      setRunResult(`✓ Execution logged to Walrus: ${shortenId(res.walrusLogBlobId, 8)}`);
+      
+      if (!isConnected) {
+        setRunResult(`✓ Simulation logged to Walrus (connect wallet to record on-chain)`);
+        setRunning(false);
+        return;
+      }
+
+      setRunResult("Waiting for wallet signature...");
+      
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${PACKAGE_ID}::agent_registry::log_execution`,
+        arguments: [
+          tx.object(id),
+          tx.object(versions[0].objectId),
+          tx.pure.string(res.walrusLogBlobId),
+          tx.pure.u64(res.durationMs),
+          tx.pure.bool(true), // Assuming success
+          tx.object("0x6"), // Clock
+        ],
+      });
+
+      signAndExecute({ transaction: tx }, {
+        onSuccess: () => {
+          setRunResult(`✓ Execution logged on-chain & Walrus: ${shortenId(res.walrusLogBlobId, 8)}`);
+          setRunning(false);
+          loadData();
+        },
+        onError: (e) => {
+          setRunResult(`✕ Error: ${e.message}`);
+          setRunning(false);
+        }
+      });
     } catch (e) {
       setRunResult(`✕ Error: ${e instanceof Error ? e.message : String(e)}`);
-    } finally { setRunning(false); }
+      setRunning(false);
+    }
   };
 
   const handleViewBlob = async (blobId: string) => {
