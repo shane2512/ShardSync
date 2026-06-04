@@ -14,6 +14,7 @@ import {
   ForkAgentSchema,
   RunAgentSchema,
 } from "../types/schemas.js";
+import { callTatumMcpTool } from "../services/mcpClient.js";
 
 export const agentRouter = Router();
 
@@ -139,56 +140,86 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
     const targetWallet = walletAddress || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
     const startTime = Date.now();
-    let balanceSui = "0.0000";
-    let portfolioValueUsd = "0.00";
-    let statusMessage = "No malicious activity detected. Empty address or zero balance.";
+    let configBlobId = "";
+    let config: any = {};
 
+    // 1. Fetch the version object from Sui to locate the Walrus config blob ID
     try {
-      if (targetWallet && targetWallet !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
-        // Run actual Sui RPC query via Tatum gateway
-        const balanceRes = await suiRpc<{ totalBalance: string }>("suix_getBalance", [targetWallet]);
-        if (balanceRes && balanceRes.totalBalance) {
-          const rawBal = parseFloat(balanceRes.totalBalance);
-          const formattedSui = (rawBal / 1e9).toFixed(4);
-          balanceSui = formattedSui;
-          
-          // Nominally price SUI at $1.50 for simulated portfolio value
-          portfolioValueUsd = ((rawBal / 1e9) * 1.50).toFixed(2);
-          statusMessage = `Successfully queried wallet balance on-chain via Tatum: ${formattedSui} SUI.`;
-        }
+      if (versionObjectId && versionObjectId.startsWith("0x")) {
+        const versionObj = await getObject(versionObjectId) as any;
+        configBlobId = versionObj?.data?.content?.fields?.walrus_config_blob_id || "";
       }
     } catch (e) {
-      console.warn("Tatum portfolio query failed, using fallback simulation:", e);
-      statusMessage = "Tatum RPC rate limit or connection issue. Fallback to cached estimation.";
-      // Generate a dynamic valuation based on wallet address hash so it is not always identical
-      let hashSum = 0;
-      for (let i = 0; i < targetWallet.length; i++) {
-        hashSum += targetWallet.charCodeAt(i);
-      }
-      portfolioValueUsd = ((hashSum % 1000) + 125.50).toFixed(2);
-      balanceSui = ((hashSum % 1000) / 1.5).toFixed(4);
+      console.warn(`[Run Agent] Could not fetch version object ${versionObjectId} fields:`, e);
     }
 
+    // 2. Fetch the configuration JSON from Walrus
+    if (configBlobId) {
+      try {
+        const configJson = await readBlob(configBlobId);
+        config = JSON.parse(configJson);
+      } catch (e) {
+        console.warn(`[Run Agent] Could not read config blob ${configBlobId} from Walrus:`, e);
+      }
+    }
+
+    // 3. Extract the target tool and parameters from the configuration
+    const enabledTools = config.mcp_tools_enabled || [];
+    const toolToRun = enabledTools[0] || "get_wallet_portfolio"; // Default fallback tool
+    const targetChain = config.parameters?.target_chain || "sui-testnet";
+    const configWallet = config.parameters?.target_wallet;
+    
+    // Resolve wallet address to query
+    const queryAddress = configWallet && configWallet !== "0xYourWalletAddressHere"
+      ? configWallet
+      : targetWallet;
+
+    // 4. Map configurations to Tatum MCP tool arguments
+    const toolArgs: Record<string, any> = {};
+    if (toolToRun === "get_wallet_portfolio" || toolToRun === "get_transaction_history") {
+      toolArgs.address = queryAddress;
+      toolArgs.chain = targetChain;
+    } else if (toolToRun === "check_malicous_address") {
+      toolArgs.address = queryAddress;
+    } else if (toolToRun === "gateway_execute_rpc") {
+      toolArgs.chain = targetChain;
+      toolArgs.method = "suix_getBalance";
+      toolArgs.params = [queryAddress];
+    } else {
+      // Fallback mappings
+      toolArgs.address = queryAddress;
+      toolArgs.chain = targetChain;
+    }
+
+    // 5. Call Tatum MCP programmatically
+    let mcpResult = { success: false, output: null as any, error: undefined as string | undefined };
+    try {
+      const callRes = await callTatumMcpTool(toolToRun, toolArgs);
+      mcpResult.success = callRes.success;
+      mcpResult.output = callRes.output;
+      mcpResult.error = callRes.error;
+    } catch (e: any) {
+      mcpResult.success = false;
+      mcpResult.error = e.message || String(e);
+    }
+
+    // 6. Build the execution log structured around the MCP call output
     const executionLog = {
       timestamp: new Date().toISOString(),
       versionId: versionObjectId,
       mcp_server: "@tatumio/blockchain-mcp",
       tool_calls: [
-        { tool: "get_wallet_portfolio", args: { address: targetWallet } },
-        { tool: "check_malicous_address", args: { address: targetWallet } }
+        { tool: toolToRun, args: toolArgs }
       ],
-      output: { 
-        status: 200, 
-        message: statusMessage,
-        wallet_address: targetWallet,
-        sui_balance: balanceSui,
-        portfolio_value_usd: portfolioValueUsd 
-      },
-      success: true,
+      output: mcpResult.success 
+        ? mcpResult.output 
+        : { status: 500, error: mcpResult.error || "Tatum MCP tool call failed." },
+      success: mcpResult.success,
     };
-    const durationMs = Date.now() - startTime + 600; // Add execution processing offset
+    
+    const durationMs = Date.now() - startTime;
 
-    // Upload execution log to Walrus
+    // 7. Persist execution log onto Walrus
     const logJson = JSON.stringify(executionLog, null, 2);
     const { blobId: logBlobId } = await storeBlob(logJson);
 
