@@ -141,11 +141,19 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
     const executionLog = {
       timestamp: new Date().toISOString(),
       versionId: versionObjectId,
-      input: { action: "health_check", target: "https://httpbin.org/get" },
-      output: { status: 200, message: "Agent executed successfully" },
+      mcp_server: "@tatumio/blockchain-mcp",
+      tool_calls: [
+        { tool: "get_wallet_portfolio", args: { address: "0xYourWalletAddressHere" } },
+        { tool: "check_malicous_address", args: { address: "0xSourceAddress" } }
+      ],
+      output: { 
+        status: 200, 
+        message: "No malicious activity detected. Wallet portfolio checked.",
+        portfolio_value_usd: "1250.00" 
+      },
       success: true,
     };
-    const durationMs = Date.now() - startTime + 50; // Add simulated processing time
+    const durationMs = Date.now() - startTime + 850; // Add simulated processing time
 
     // Upload execution log to Walrus
     const logJson = JSON.stringify(executionLog, null, 2);

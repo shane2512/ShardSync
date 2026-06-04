@@ -10,15 +10,19 @@ import { useIsWalletConnected } from "../../hooks/useWalletAddress";
 const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
 
 const DEFAULT_CONFIG = `{
-  "model": "gpt-4",
-  "schedule": "*/5 * * * *",
-  "endpoints": {
-    "data_source": "https://api.coingecko.com/api/v3",
-    "publish_target": "sui://oracle-feed"
-  },
+  "mcp_server": "@tatumio/blockchain-mcp",
+  "schedule": "*/15 * * * *",
+  "mcp_tools_enabled": [
+    "get_wallet_portfolio",
+    "get_transaction_history",
+    "check_malicous_address",
+    "gateway_execute_rpc"
+  ],
+  "agent_prompt": "Monitor the target wallet portfolio. If a malicious token appears or balance drops significantly, execute RPC to pause trading.",
   "parameters": {
-    "temperature": 0.1,
-    "max_tokens": 512
+    "target_chain": "sui-testnet",
+    "target_wallet": "0xYourWalletAddressHere",
+    "alert_threshold": "high"
   }
 }`;
 
