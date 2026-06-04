@@ -19,16 +19,61 @@ interface VersionFields {
 interface VersionItem { objectId: string; fields: VersionFields; }
 
 // ─── Modal: New Version ────────────────────────────────────────────────
-function NewVersionModal({ agentId, registryObjectId, latestConfig, onClose, onSuccess }: {
-  agentId: string; registryObjectId: string; latestConfig: string;
+function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onSuccess }: {
+  agentId: string; registryObjectId: string; latestBlobId: string;
   onClose: () => void; onSuccess: () => void;
 }) {
-  const [config, setConfig] = useState(latestConfig);
+  const [config, setConfig] = useState("");
+  const [loadingConfig, setLoadingConfig] = useState(false);
   const [commitMsg, setCommitMsg] = useState("");
   const [configError, setConfigError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "uploading" | "signing" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+
+  useEffect(() => {
+    const loadLatestConfig = async () => {
+      const defaultTemplate = {
+        name: "ShardSync Agent Config",
+        version: "1.0.0",
+        description: "Strategy configuration for the autonomous agent",
+        settings: {
+          pairs: ["SUI/USDC"],
+          minConfidence: 0.85,
+          maxSlippage: 0.01,
+          autoCompound: true
+        }
+      };
+
+      if (!latestBlobId) {
+        setConfig(JSON.stringify(defaultTemplate, null, 2));
+        return;
+      }
+
+      setLoadingConfig(true);
+      setConfig("// Fetching previous version configuration from Walrus...");
+      try {
+        const res = await readBlob(latestBlobId);
+        if (res && res.content) {
+          try {
+            const parsed = JSON.parse(res.content);
+            setConfig(JSON.stringify(parsed, null, 2));
+          } catch {
+            setConfig(res.content);
+          }
+        } else {
+          setConfig(JSON.stringify(defaultTemplate, null, 2));
+        }
+      } catch (err) {
+        console.error("Failed to load previous config:", err);
+        setConfig(JSON.stringify(defaultTemplate, null, 2));
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    loadLatestConfig();
+  }, [latestBlobId]);
 
   const validate = (v: string) => {
     setConfig(v);
@@ -36,7 +81,7 @@ function NewVersionModal({ agentId, registryObjectId, latestConfig, onClose, onS
   };
 
   const handleSubmit = async () => {
-    if (!commitMsg.trim() || configError) return;
+    if (!commitMsg.trim() || configError || loadingConfig) return;
     setPhase("uploading");
     try {
       const parsed = JSON.parse(config);
@@ -83,6 +128,7 @@ function NewVersionModal({ agentId, registryObjectId, latestConfig, onClose, onS
                 value={config} onChange={(e) => validate(e.target.value)} rows={10}
                 className="w-full bg-transparent text-secondary-fixed font-label-mono text-[13px] leading-relaxed resize-y outline-none border-none"
                 spellCheck="false"
+                disabled={loadingConfig}
               />
             </div>
           </div>
@@ -350,7 +396,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
       {/* Modals */}
       {showNewVersion && (
         <NewVersionModal
-          agentId={id} registryObjectId={id} latestConfig={latestBlobId ? "" : "{}"}
+          agentId={id} registryObjectId={id} latestBlobId={latestBlobId}
           onClose={() => setShowNewVersion(false)}
           onSuccess={() => { setShowNewVersion(false); setLoading(true); loadData(); }}
         />
