@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tatumio": {
+      "command": "npx",
+      "args": [
+        "@tatumio/blockchain-mcp"
+      ],
+      "env": {
+        "TATUM_API_KEY": "t-6a1c25346aecb93c19501b50-04044e7aadf648f5bdc2d7b5"
+      }
+    }
+  }
+}
