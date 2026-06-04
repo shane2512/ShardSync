@@ -144,6 +144,7 @@ export async function runAgent(data: {
   agentId: string;
   registryObjectId: string;
   versionObjectId: string;
+  walletAddress?: string;
 }) {
   return apiFetch<RunAgentResponse>("/agents/run", {
     method: "POST",

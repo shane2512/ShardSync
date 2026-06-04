@@ -134,7 +134,8 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
       return;
     }
 
-    const { registryObjectId, versionObjectId } = parsed.data;
+    const { registryObjectId, versionObjectId, walletAddress } = parsed.data;
+    const targetWallet = walletAddress || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
     // Simulate a deterministic execution
     const startTime = Date.now();
@@ -143,7 +144,7 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
       versionId: versionObjectId,
       mcp_server: "@tatumio/blockchain-mcp",
       tool_calls: [
-        { tool: "get_wallet_portfolio", args: { address: "0xYourWalletAddressHere" } },
+        { tool: "get_wallet_portfolio", args: { address: targetWallet } },
         { tool: "check_malicous_address", args: { address: "0xSourceAddress" } }
       ],
       output: { 

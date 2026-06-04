@@ -28,6 +28,7 @@ export const RunAgentSchema = z.object({
   agentId: z.string().min(1),
   registryObjectId: z.string().min(1),
   versionObjectId: z.string().min(1),
+  walletAddress: z.string().optional(),
 });
 
 // ─── Response Types ───────────────────────────────────────────────────

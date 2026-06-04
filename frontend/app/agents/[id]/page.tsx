@@ -245,7 +245,12 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     if (!agent || versions.length === 0) return;
     setRunning(true); setRunResult(null);
     try {
-      const res = await runAgent({ agentId: id, registryObjectId: id, versionObjectId: versions[0].objectId });
+      const res = await runAgent({ 
+        agentId: id, 
+        registryObjectId: id, 
+        versionObjectId: versions[0].objectId,
+        walletAddress: owner || undefined
+      });
       
       if (!isConnected) {
         setRunResult(`✓ Simulation logged to Walrus (connect wallet to record on-chain)`);
