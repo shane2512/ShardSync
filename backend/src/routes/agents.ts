@@ -129,6 +129,468 @@ agentRouter.post("/agents/fork", async (req: Request, res: Response) => {
   }
 });
 
+// ─── Tool Registry ─────────────────────────────────────────────────────
+// Tatum MCP tool name: check_malicous_address (official typo — missing 'i').
+// We normalise both spellings so user configs work regardless of which they typed.
+// Sui is NOT in Tatum Data API supported chains — Sui calls go to JSON-RPC gateway.
+
+/** Normalise tool name: collapse the known Tatum typo and trim whitespace. */
+function normaliseTool(name: string): string {
+  return name.trim().replace("check_malicous_address", "check_malicious_address");
+}
+
+/** Extract the first blockchain address mentioned in a prompt.
+ *  Supports EVM (0x + 40 hex), Sui (0x + 64 hex), Bitcoin (legacy/bech32), Solana base58.
+ */
+function extractAddressFromPrompt(prompt: string): string | null {
+  // Sui 0x64-hex or EVM 0x40-hex
+  const hexMatch = prompt.match(/0x[0-9a-fA-F]{40,64}/);
+  if (hexMatch) return hexMatch[0];
+  // Bitcoin bech32 bc1...
+  const btcBech32 = prompt.match(/\bbc1[a-zA-HJ-NP-Z0-9]{25,62}\b/);
+  if (btcBech32) return btcBech32[0];
+  // Legacy Bitcoin/Litecoin/Dogecoin
+  const legacyBtc = prompt.match(/\b[13LMD][a-km-zA-HJ-NP-Z1-9]{25,34}\b/);
+  if (legacyBtc) return legacyBtc[0];
+  // Solana base58 (32-44 chars, starts with non-0x)
+  const solana = prompt.match(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/);
+  if (solana) return solana[0];
+  return null;
+}
+
+const TOOL_REGISTRY = [
+  // ── Blockchain Data tools ──────────────────────────────────────────────
+  {
+    name: "get_transaction_history",
+    aliases: [] as string[],
+    description: "Get transaction history and transfers for a wallet address",
+    keywords: [
+      "transaction", "transactions", "history", "tx", "txs", "transfer", "transfers",
+      "sent", "received", "past", "recent", "activity", "payment", "payments",
+      "show transactions", "list transactions", "get transactions", "transaction list",
+      "on-chain activity", "on chain activity",
+    ],
+    suiSupported: true,   // via suix_queryTransactionBlocks
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_wallet_portfolio",
+    aliases: [] as string[],
+    description: "Get comprehensive wallet portfolio, all coin and token balances",
+    keywords: [
+      "portfolio", "balance", "balances", "holdings", "assets", "tokens", "coins",
+      "wallet", "funds", "how much", "what is in", "what do i have", "total value",
+      "show portfolio", "get portfolio", "show balance", "get balance",
+      "coin balance", "asset list", "all assets", "my assets",
+    ],
+    suiSupported: true,   // via suix_getAllBalances
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_wallet_balance_by_time",
+    aliases: [] as string[],
+    description: "Get wallet balance at a specific point in time (historical snapshot)",
+    keywords: [
+      "balance at", "balance at time", "historical balance", "past balance",
+      "snapshot", "timestamp", "at date", "at time", "historical", "history balance",
+      "what was balance", "balance on date", "balance on",
+    ],
+    suiSupported: false,  // Data API EVM/BTC only
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_exchange_rate",
+    aliases: [] as string[],
+    description: "Get real-time exchange rates for any crypto/fiat pair",
+    keywords: [
+      "exchange rate", "exchange rates", "price", "rate", "usd", "usd price",
+      "dollar", "value", "convert", "worth", "cost", "market price", "market",
+      "how much is", "current price", "token price", "coin price", "fiat",
+      "what is the price", "what is price", "get price", "show price",
+    ],
+    suiSupported: true,   // cross-chain Data API
+    evmSupported: true,
+    requiresAddress: false,
+    requiresChain: false,
+  },
+  {
+    name: "check_malicious_address",
+    aliases: ["check_malicous_address"],  // Tatum official typo
+    description: "Check if a wallet or contract address is flagged as malicious or a scam",
+    keywords: [
+      "malicious", "malicous", "scam", "fraud", "fraudulent", "safe", "unsafe",
+      "dangerous", "risk", "risky", "flagged", "blacklist", "blacklisted",
+      "suspicious", "check address", "security", "is it safe", "is safe",
+      "verify address", "check if malicious", "check whether", "is this address",
+      "legitimate", "legit", "hack", "phishing", "rug pull", "rugpull",
+      "check wallet", "validate address", "address check",
+    ],
+    suiSupported: true,   // cross-chain Data API — works for any address type
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: false,
+  },
+  {
+    name: "get_tokens",
+    aliases: [] as string[],
+    description: "Get all ERC-20/token holdings for a wallet",
+    keywords: [
+      "tokens", "erc20", "erc-20", "nft", "nfts", "collectibles",
+      "list tokens", "all tokens", "owned tokens", "token list",
+      "show tokens", "get tokens", "token holdings", "what tokens",
+    ],
+    suiSupported: false,  // Data API EVM-only
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_metadata",
+    aliases: [] as string[],
+    description: "Fetch NFT or multi-token metadata by contract address and token IDs",
+    keywords: [
+      "metadata", "nft metadata", "token info", "token metadata", "collection",
+      "details", "attributes", "properties", "image", "nft details",
+      "token details", "get metadata", "fetch metadata", "show metadata",
+      "describe nft", "what is this nft",
+    ],
+    suiSupported: false,  // Data API EVM-only
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_owners",
+    aliases: [] as string[],
+    description: "Get list of owners of an NFT or token by contract address",
+    keywords: [
+      "owners", "who owns", "holder", "holders", "ownership", "who holds",
+      "get owners", "list owners", "show owners", "token owners",
+      "nft owners", "nft holders",
+    ],
+    suiSupported: false,
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "check_owner",
+    aliases: [] as string[],
+    description: "Check if a specific address owns a particular token or NFT",
+    keywords: [
+      "owns", "owner check", "verify ownership", "does own", "do i own",
+      "does address own", "is owner", "check ownership", "owns this",
+      "check if owner",
+    ],
+    suiSupported: false,
+    evmSupported: true,
+    requiresAddress: true,
+    requiresChain: true,
+  },
+  {
+    name: "get_block_by_time",
+    aliases: [] as string[],
+    description: "Get block information at a specific timestamp",
+    keywords: [
+      "block", "block number", "block at time", "block height", "block info",
+      "get block", "find block", "block timestamp", "what block",
+      "block by time", "block by timestamp",
+    ],
+    suiSupported: false,
+    evmSupported: true,
+    requiresAddress: false,
+    requiresChain: true,
+  },
+  // ── RPC Gateway tools ──────────────────────────────────────────────────
+  {
+    name: "gateway_get_supported_chains",
+    aliases: [] as string[],
+    description: "Get all blockchain networks supported by the Tatum RPC gateway",
+    keywords: [
+      "supported chains", "supported networks", "which chains", "available chains",
+      "list chains", "list networks", "all chains", "all networks",
+      "what chains", "what networks", "gateway chains",
+    ],
+    suiSupported: true,
+    evmSupported: true,
+    requiresAddress: false,
+    requiresChain: false,
+  },
+  {
+    name: "gateway_get_supported_methods",
+    aliases: [] as string[],
+    description: "Get all RPC methods supported for a specific blockchain network",
+    keywords: [
+      "supported methods", "rpc methods", "available methods", "what methods",
+      "which methods", "list methods", "gateway methods", "rpc calls",
+    ],
+    suiSupported: true,
+    evmSupported: true,
+    requiresAddress: false,
+    requiresChain: true,
+  },
+  {
+    name: "gateway_execute_rpc",
+    aliases: [] as string[],
+    description: "Execute a raw RPC call on any supported blockchain via the Tatum gateway",
+    keywords: [
+      "execute rpc", "run rpc", "rpc call", "raw rpc", "custom rpc", "gateway rpc",
+      "call rpc", "rpc execute", "invoke rpc",
+    ],
+    suiSupported: true,
+    evmSupported: true,
+    requiresAddress: false,
+    requiresChain: true,
+  },
+];
+
+type ToolEntry = typeof TOOL_REGISTRY[0];
+
+/**
+ * NLP tool selector — keyword-based scoring.
+ * - Normalises tool names to handle Tatum typos (check_malicous_address).
+ * - Extracts blockchain addresses inline from the prompt.
+ * - Returns best matching tool from the agent's enabled tools list.
+ */
+function selectToolFromPrompt(
+  prompt: string,
+  enabledToolsRaw: string[],
+  isSuiChain: boolean
+): { tool: ToolEntry | null; score: number; reason: string; extractedAddress: string | null } {
+  const lower = prompt.toLowerCase();
+  const enabledTools = enabledToolsRaw.map(normaliseTool);
+  const extractedAddress = extractAddressFromPrompt(prompt);
+
+  let bestTool: ToolEntry | null = null;
+  let bestScore = 0;
+  let bestReason = "";
+
+  for (const tool of TOOL_REGISTRY) {
+    const normName = normaliseTool(tool.name);
+
+    // Match against normalised name AND any aliases
+    const isEnabled =
+      enabledTools.includes(normName) ||
+      (tool.aliases || []).some((a) => enabledTools.includes(normaliseTool(a)));
+    if (!isEnabled) continue;
+
+    // Chain compatibility
+    if (isSuiChain && !tool.suiSupported) continue;
+
+    // Score by keyword matches (longer keyword phrase = more specific = higher weight)
+    let score = 0;
+    const matchedKeywords: string[] = [];
+    for (const kw of tool.keywords) {
+      if (lower.includes(kw.toLowerCase())) {
+        score += kw.length;
+        matchedKeywords.push(kw);
+      }
+    }
+
+    // Bonus: if an address was found in the prompt and the tool requires one
+    if (extractedAddress && tool.requiresAddress) score += 5;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestTool = tool;
+      bestReason = matchedKeywords.length > 0
+        ? `Matched keywords: [${matchedKeywords.join(", ")}]`
+        : "Selected as best available tool";
+    }
+  }
+
+  return { tool: bestTool, score: bestScore, reason: bestReason, extractedAddress };
+}
+
+// ─── Run Agent with NLP Prompt ────────────────────────────────────────
+
+agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
+  try {
+    const { registryObjectId, versionObjectId, walletAddress, prompt } = req.body as {
+      registryObjectId: string;
+      versionObjectId: string;
+      walletAddress?: string;
+      prompt: string;
+    };
+
+    if (!prompt || !versionObjectId) {
+      res.status(400).json({ error: "prompt and versionObjectId are required" });
+      return;
+    }
+
+    const startTime = Date.now();
+    const targetWallet = walletAddress || "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    // 1. Fetch config from Walrus via the version object
+    let config: Record<string, unknown> = {};
+    let configBlobId = "";
+    try {
+      if (versionObjectId?.startsWith("0x")) {
+        const versionObj = await getObject(versionObjectId) as any;
+        configBlobId = versionObj?.data?.content?.fields?.walrus_config_blob_id || "";
+      }
+      if (configBlobId) {
+        const configJson = await readBlob(configBlobId);
+        config = JSON.parse(configJson);
+      }
+    } catch (e) {
+      console.warn("[run-prompt] Could not load config from Walrus:", e);
+    }
+
+    const enabledTools = (config.mcp_tools_enabled as string[]) || [];
+    const targetChain = (config.parameters as any)?.target_chain || "sui-testnet";
+    const configWallet = (config.parameters as any)?.target_wallet;
+    const queryAddress = configWallet && configWallet !== "0xYourWalletAddressHere"
+      ? configWallet
+      : targetWallet;
+    const isSuiChain = targetChain.toLowerCase().includes("sui");
+
+    // 2. NLP: Find the best matching tool for the prompt + extract any inline address
+    const { tool: selectedTool, reason: nlpReason, extractedAddress } = selectToolFromPrompt(prompt, enabledTools, isSuiChain);
+
+    // Address priority: address found in prompt → config wallet → connected wallet
+    const resolvedAddress = extractedAddress || queryAddress;
+
+    let executionLog: Record<string, unknown>;
+
+    if (!selectedTool) {
+      // Use normalised names for the fallback check too
+      const normEnabled = enabledTools.map(normaliseTool);
+      const anyToolMatch = TOOL_REGISTRY.find(t =>
+        normEnabled.includes(normaliseTool(t.name)) &&
+        t.keywords.some(kw => prompt.toLowerCase().includes(kw.toLowerCase()))
+      );
+
+      const noToolReason = enabledTools.length === 0
+        ? "No MCP tools are enabled in this agent's configuration. Add tools to mcp_tools_enabled in the config."
+        : anyToolMatch && isSuiChain && !anyToolMatch.suiSupported
+        ? `The tool "${anyToolMatch.name}" does not support Sui chains. It only works with EVM/BTC chains (Ethereum, Polygon, etc.). Consider changing target_chain in the agent config.`
+        : `No tool in this agent's configuration matches your request: "${prompt}". Enabled tools: [${enabledTools.join(", ")}]. Try rephrasing or update the agent config to include relevant tools.`;
+
+      executionLog = {
+        timestamp: new Date().toISOString(),
+        versionId: versionObjectId,
+        prompt,
+        mcp_server: "@tatumio/blockchain-mcp",
+        tool_selection: { selected: null, reason: noToolReason },
+        tool_calls: [],
+        output: { status: "no_tool_found", message: noToolReason },
+        success: false,
+        duration_ms: Date.now() - startTime,
+      };
+    } else {
+      // 3. Execute the selected tool
+      let mcpResult: { success: boolean; output: unknown; error?: string };
+
+      // ── Gateway tools — chain-agnostic, handled before Sui/EVM split ───
+      if (selectedTool.name === "gateway_get_supported_chains") {
+        const r = await callTatumMcpTool("gateway_get_supported_chains", {});
+        mcpResult = { success: r.success, output: r.output, error: r.error };
+
+      } else if (selectedTool.name === "gateway_get_supported_methods") {
+        const r = await callTatumMcpTool("gateway_get_supported_methods", { chain: targetChain });
+        mcpResult = { success: r.success, output: r.output, error: r.error };
+
+      } else if (selectedTool.name === "gateway_execute_rpc") {
+        const r = await callTatumMcpTool("gateway_execute_rpc", { chain: targetChain, method: "eth_blockNumber", params: [] });
+        mcpResult = { success: r.success, output: r.output, error: r.error };
+
+      // ── Sui-native tools — routed through suix_* JSON-RPC ──────────────
+      } else if (isSuiChain) {
+        try {
+          if (selectedTool.name === "get_transaction_history") {
+            const txResult = await querySuiTransactions(resolvedAddress, 10);
+            mcpResult = { success: true, output: { rpc_method: "suix_queryTransactionBlocks", address: resolvedAddress, data: txResult } };
+
+          } else if (selectedTool.name === "get_wallet_portfolio") {
+            const [balances, suiBalance] = await Promise.all([getSuiAllBalances(resolvedAddress), getSuiBalance(resolvedAddress)]);
+            mcpResult = { success: true, output: { rpc_method: "suix_getAllBalances", address: resolvedAddress, sui_native: suiBalance, all_balances: balances } };
+
+          } else if (selectedTool.name === "check_malicious_address" || selectedTool.name === "check_malicous_address") {
+            const r = await callTatumMcpTool("check_malicious_address", { address: resolvedAddress });
+            mcpResult = { success: r.success, output: r.output, error: r.error };
+
+          } else if (selectedTool.name === "get_exchange_rate") {
+            const symbolMatch = prompt.match(/\b(BTC|ETH|SOL|SUI|MATIC|BNB|AVAX|ADA|XRP|DOGE|DOT|LINK|UNI)\b/i);
+            const symbol = symbolMatch ? symbolMatch[1].toUpperCase() : "SUI";
+            const r = await callTatumMcpTool("get_exchange_rate", { symbol, basePair: "USD" });
+            mcpResult = { success: r.success, output: r.output, error: r.error };
+
+          } else {
+            // EVM-only tool requested on a Sui chain — should be filtered by registry, safe fallback
+            mcpResult = {
+              success: false,
+              output: null,
+              error: `Tool "${selectedTool.name}" does not support Sui chains. Change target_chain in the agent config to an EVM chain (e.g. ethereum, polygon).`,
+            };
+          }
+        } catch (e: any) {
+          mcpResult = { success: false, output: null, error: e.message || String(e) };
+        }
+
+      // ── EVM / Data API tools ────────────────────────────────────────────
+      } else {
+        try {
+          const toolArgs: Record<string, unknown> = {};
+          if (selectedTool.requiresAddress) { toolArgs.addresses = resolvedAddress; toolArgs.address = resolvedAddress; }
+          if (selectedTool.requiresChain)   { toolArgs.chain = targetChain; }
+
+          if (selectedTool.name === "get_wallet_portfolio") toolArgs.tokenTypes = "native";
+          if (selectedTool.name === "get_exchange_rate") {
+            const symbolMatch = prompt.match(/\b(BTC|ETH|SOL|SUI|MATIC|BNB|AVAX|ADA|XRP|DOGE|DOT|LINK|UNI)\b/i);
+            toolArgs.symbol   = symbolMatch ? symbolMatch[1].toUpperCase() : "ETH";
+            toolArgs.basePair = "USD";
+          }
+          if (selectedTool.name === "get_metadata")     { toolArgs.tokenAddress = resolvedAddress; toolArgs.tokenIds = ["1"]; }
+          if (selectedTool.name === "get_block_by_time") { toolArgs.time = Math.floor(Date.now() / 1000); }
+
+          const r = await callTatumMcpTool(selectedTool.name, toolArgs);
+          mcpResult = { success: r.success, output: r.output, error: r.error };
+        } catch (e: any) {
+          mcpResult = { success: false, output: null, error: e.message || String(e) };
+        }
+      }
+
+      executionLog = {
+        timestamp: new Date().toISOString(),
+        versionId: versionObjectId,
+        prompt,
+        mcp_server: "@tatumio/blockchain-mcp",
+        tool_selection: {
+          selected: selectedTool.name,
+          description: selectedTool.description,
+          nlp_reason: nlpReason,
+          chain: targetChain,
+          sui_chain: isSuiChain,
+        },
+        tool_calls: [{ tool: selectedTool.name, args: { address: resolvedAddress, chain: targetChain, address_source: extractedAddress ? "extracted_from_prompt" : "agent_config" } }],
+        output: mcpResult.success ? mcpResult.output : { status: 500, error: mcpResult.error },
+        success: mcpResult.success,
+        duration_ms: Date.now() - startTime,
+      };
+    }
+
+    // 4. Persist log to Walrus
+    const logJson = JSON.stringify(executionLog, null, 2);
+    const { blobId: logBlobId } = await storeBlob(logJson);
+
+    res.json({
+      walrusLogBlobId: logBlobId,
+      executionLog,
+      durationMs: executionLog.duration_ms,
+      toolSelected: selectedTool?.name || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // ─── Run Agent (simulate execution) ──────────────────────────────────
 
 agentRouter.post("/agents/run", async (req: Request, res: Response) => {

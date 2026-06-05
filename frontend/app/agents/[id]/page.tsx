@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, use } from "react";
 import { Transaction } from "@mysten/sui/transactions";
 import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { getAgent, listVersions, listExecutions, readBlob, runAgent, createVersion, forkAgent, shortenId, timeAgo } from "../../lib/api";
+import { getAgent, listVersions, listExecutions, readBlob, runAgentWithPrompt, createVersion, forkAgent, shortenId, timeAgo } from "../../lib/api";
 import { useWalletAddress, useIsWalletConnected } from "../../hooks/useWalletAddress";
 
 const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
@@ -161,6 +161,218 @@ function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onS
   );
 }
 
+// ─── Modal: Run Agent (NLP-powered) ────────────────────────────────────
+
+const EXAMPLE_PROMPTS = [
+  "What is the transaction history for this wallet?",
+  "Show me the portfolio and balance",
+  "Is this address safe or malicious?",
+  "What is the current SUI price in USD?",
+  "Get the recent transfers and activity",
+];
+
+function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClose, onSuccess }: {
+  versionObjectId: string;
+  registryObjectId: string;
+  walletAddress: string;
+  onClose: () => void;
+  onSuccess: (result: { blobId: string; log: Record<string, unknown> }) => void;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [phase, setPhase] = useState<"idle" | "running" | "signing" | "done" | "error">("idle");
+  const [log, setLog] = useState<Record<string, unknown> | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const isConnected = useIsWalletConnected();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+
+  const toolSelection = log?.tool_selection as Record<string, unknown> | undefined;
+  const selectedTool = toolSelection?.selected as string | null;
+  const nlpReason = toolSelection?.nlp_reason as string | undefined;
+  const noToolMsg = toolSelection?.reason as string | undefined;
+
+  const handleRun = async () => {
+    if (!prompt.trim() || phase !== "idle") return;
+    setPhase("running"); setLog(null); setErrorMsg("");
+    try {
+      const res = await runAgentWithPrompt({
+        registryObjectId,
+        versionObjectId,
+        walletAddress: walletAddress || undefined,
+        prompt: prompt.trim(),
+      });
+      setLog(res.executionLog);
+
+      if (!res.executionLog.success) {
+        setPhase("error");
+        return;
+      }
+
+      // If wallet is connected, trigger on-chain log_execution signing
+      if (isConnected && walletAddress && PACKAGE_ID) {
+        setPhase("signing");
+        const tx = new Transaction();
+        tx.moveCall({
+          target: `${PACKAGE_ID}::agent_registry::log_execution`,
+          arguments: [
+            tx.object(registryObjectId),
+            tx.object(versionObjectId),
+            tx.pure.string(res.walrusLogBlobId),
+            tx.pure.u64(res.durationMs),
+            tx.pure.bool(true),
+            tx.object("0x6"),
+          ],
+        });
+        signAndExecute({ transaction: tx }, {
+          onSuccess: () => {
+            setPhase("done");
+            onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+          },
+          onError: (e) => {
+            // Execution already logged to Walrus — signing failed but data is safe
+            setErrorMsg(`On-chain signing failed: ${e.message}. Walrus log was saved.`);
+            setPhase("error");
+            onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+          },
+        });
+      } else {
+        // No wallet — still mark done, log is on Walrus
+        setPhase("done");
+        onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+      }
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : String(e));
+      setPhase("error");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm">
+      <div className="clay-card w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+        {/* Header */}
+        <div className="p-8 pb-0">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h2 className="font-headline-md text-headline-md">Run Agent</h2>
+              <p className="text-on-surface-variant text-sm mt-1">Describe what you want the agent to do in natural language. The agent will select the right Tatum MCP tool automatically.</p>
+            </div>
+            <button onClick={onClose} className="text-on-surface-variant hover:text-primary material-symbols-outlined text-2xl shrink-0 ml-4">close</button>
+          </div>
+        </div>
+
+        <div className="p-8 space-y-6">
+          {/* Prompt Input */}
+          <div>
+            <label className="block font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant mb-2">Your Request</label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="e.g. What are the recent transactions for this wallet?"
+              rows={3}
+              className="w-full clay-inset px-4 py-3 font-body-md outline-none resize-none rounded-2xl"
+              disabled={phase === "running"}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleRun(); } }}
+            />
+          </div>
+
+          {/* Example prompts */}
+          {phase === "idle" && !log && (
+            <div>
+              <p className="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant mb-2">Try these</p>
+              <div className="flex flex-wrap gap-2">
+                {EXAMPLE_PROMPTS.map((ex) => (
+                  <button
+                    key={ex}
+                    onClick={() => setPrompt(ex)}
+                    className="text-xs px-3 py-1.5 clay-inset rounded-full text-secondary hover:bg-secondary/5 transition-colors font-label-mono"
+                  >
+                    {ex}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tool Selection Preview (shown after run) */}
+          {log && (
+            <div className="space-y-4">
+              {/* Tool badge */}
+              <div className={`flex items-center gap-3 p-4 rounded-2xl ${
+                selectedTool ? "bg-secondary/8 border border-secondary/20" : "bg-error/5 border border-error/20"
+              }`}>
+                <span className={`material-symbols-outlined ${
+                  selectedTool ? "text-secondary" : "text-error"
+                }`}>
+                  {selectedTool ? "smart_toy" : "warning"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-headline-sm text-[14px] text-primary">
+                    {selectedTool ? `Tool selected: ${selectedTool}` : "No matching tool found"}
+                  </p>
+                  <p className="font-label-mono text-[11px] text-on-surface-variant truncate">
+                    {selectedTool ? nlpReason : noToolMsg}
+                  </p>
+                </div>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  log.success ? "bg-green-500" : "bg-error"
+                }`} />
+              </div>
+
+              {/* Execution Log */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant">Execution Log</p>
+                  <span className={`font-label-mono text-[11px] px-2 py-0.5 rounded-full ${
+                    log.success ? "bg-green-50 text-green-700" : "bg-error/10 text-error"
+                  }`}>
+                    {log.success ? "SUCCESS" : "FAILED"} · {String(log.duration_ms)}ms
+                  </span>
+                </div>
+                <div className="bg-[#1b1b1b] rounded-2xl p-4 overflow-auto max-h-64">
+                  <pre className="text-secondary-fixed font-label-mono text-[12px] leading-relaxed whitespace-pre-wrap">
+                    {JSON.stringify(log, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error from fetch */}
+          {phase === "error" && errorMsg && (
+            <div className="p-4 bg-error/10 text-error rounded-xl flex gap-2 text-sm">
+              <span className="material-symbols-outlined shrink-0">error</span>
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleRun}
+              disabled={!prompt.trim() || phase === "running" || phase === "signing"}
+              className="flex-1 py-4 clay-button-primary text-white flex items-center justify-center gap-2 font-headline-sm disabled:opacity-50 rounded-2xl"
+            >
+              {phase === "running" ? (
+                <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Running MCP tools...</>
+              ) : phase === "signing" ? (
+                <><span className="material-symbols-outlined animate-pulse text-[18px]">draw</span>Waiting for wallet signature...</>
+              ) : phase === "done" ? (
+                <><span className="material-symbols-outlined">check_circle</span>Run Again</>
+              ) : (
+                <><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>Execute Agent</>
+              )}
+            </button>
+            {(phase === "done" || phase === "error") && (
+              <button onClick={() => { setPhase("idle"); setLog(null); setErrorMsg(""); setPrompt(""); }} className="px-6 py-4 clay-button-secondary rounded-2xl font-headline-sm">
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Modal: Fork Agent ─────────────────────────────────────────────────
 function ForkModal({ sourceVersion, onClose, onSuccess }: {
   sourceVersion: VersionItem; onClose: () => void; onSuccess: () => void;
@@ -267,8 +479,8 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const [versions, setVersions] = useState<VersionItem[]>([]);
   const [executions, setExecutions] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<string | null>(null);
+  const [showRunModal, setShowRunModal] = useState(false);
   const [diffBlobs, setDiffBlobs] = useState<{ left: string; right: string; leftVer: string; rightVer: string } | null>(null);
   const [diffContent, setDiffContent] = useState<{ left: string; right: string } | null>(null);
   const [blobView, setBlobView] = useState<{ id: string; content: string } | null>(null);
@@ -307,53 +519,9 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => { loadData(); }, [id, owner]);
 
-  const handleRun = async () => {
-    if (!agent || versions.length === 0) return;
-    setRunning(true); setRunResult(null);
-    try {
-      const res = await runAgent({ 
-        agentId: id, 
-        registryObjectId: id, 
-        versionObjectId: versions[0].objectId,
-        walletAddress: owner || undefined
-      });
-      
-      if (!isConnected) {
-        setRunResult(`✓ Simulation logged to Walrus (connect wallet to record on-chain)`);
-        setRunning(false);
-        return;
-      }
-
-      setRunResult("Waiting for wallet signature...");
-      
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${PACKAGE_ID}::agent_registry::log_execution`,
-        arguments: [
-          tx.object(id),
-          tx.object(versions[0].objectId),
-          tx.pure.string(res.walrusLogBlobId),
-          tx.pure.u64(res.durationMs),
-          tx.pure.bool(true), // Assuming success
-          tx.object("0x6"), // Clock
-        ],
-      });
-
-      signAndExecute({ transaction: tx }, {
-        onSuccess: () => {
-          setRunResult(`✓ Execution logged on-chain & Walrus: ${shortenId(res.walrusLogBlobId, 8)}`);
-          setRunning(false);
-          loadData();
-        },
-        onError: (e) => {
-          setRunResult(`✕ Error: ${e.message}`);
-          setRunning(false);
-        }
-      });
-    } catch (e) {
-      setRunResult(`✕ Error: ${e instanceof Error ? e.message : String(e)}`);
-      setRunning(false);
-    }
+  const handleRunSuccess = ({ blobId }: { blobId: string; log: Record<string, unknown> }) => {
+    setRunResult(`✓ Execution logged to Walrus: ${shortenId(blobId, 8)}`);
+    loadData();
   };
 
   const handleViewBlob = async (blobId: string) => {
@@ -399,6 +567,15 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           agentId={id} registryObjectId={id} latestBlobId={latestBlobId}
           onClose={() => setShowNewVersion(false)}
           onSuccess={() => { setShowNewVersion(false); setLoading(true); loadData(); }}
+        />
+      )}
+      {showRunModal && versions.length > 0 && (
+        <RunAgentModal
+          versionObjectId={versions[0].objectId}
+          registryObjectId={id}
+          walletAddress={owner}
+          onClose={() => setShowRunModal(false)}
+          onSuccess={(r) => { handleRunSuccess(r); setShowRunModal(false); }}
         />
       )}
       {forkVersion && (
@@ -483,9 +660,9 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </>
           )}
-          <button onClick={handleRun} disabled={running || versions.length === 0} className={`flex items-center gap-2 px-8 py-3 clay-button-primary rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform ${running || versions.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+          <button onClick={() => { setShowRunModal(true); setRunResult(null); }} disabled={versions.length === 0} className={`flex items-center gap-2 px-8 py-3 clay-button-primary rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform ${versions.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-            {running ? "Running..." : "Run Agent"}
+            Run Agent
           </button>
         </div>
       </section>
