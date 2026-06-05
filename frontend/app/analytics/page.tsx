@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+      <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">
         <div className="w-48 h-8 bg-surface-container-high animate-pulse rounded-lg mb-4"></div>
         <div className="w-96 h-4 bg-surface-container-high animate-pulse rounded-lg mb-12"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter mb-10">
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+    <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">
       {/* Page Header */}
       <div className="mb-10">
         <h1 className="font-headline-lg text-headline-lg text-primary mb-2">Analytics</h1>

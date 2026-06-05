@@ -62,7 +62,7 @@ export default function TimelinePage() {
   }, [owner]);
 
   return (
-    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+    <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">
       {/* Header Section */}
       <div className="mb-12">
         <h1 className="font-headline-lg text-headline-lg text-primary mb-2">Execution Timeline</h1>

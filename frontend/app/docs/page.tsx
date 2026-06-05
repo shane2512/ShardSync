@@ -54,7 +54,7 @@ export default function DocsPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--color-surface)" }}>
 
-      <div className="max-w-container-max mx-auto px-margin-desktop flex gap-10 py-12 w-full">
+      <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop flex gap-10 py-8 md:py-12 w-full">
         {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-56 shrink-0 gap-1 sticky top-28 self-start">
           <p className="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant mb-3 pl-3">Contents</p>

@@ -26,7 +26,7 @@ export default function RootLayout({
       <body>
         <WalletProviders>
           <Navbar />
-          <main style={{ paddingTop: "72px" }}>{children}</main>
+          <main className="pt-16 md:pt-20">{children}</main>
           <Footer />
         </WalletProviders>
         <Analytics />

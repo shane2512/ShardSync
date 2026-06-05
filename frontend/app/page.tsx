@@ -4,16 +4,16 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="pt-12">
+    <div className="pt-8 md:pt-12">
       {/* Hero Section */}
-      <section className="max-w-container-max mx-auto px-margin-desktop mb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-[48%_52%] gap-16 items-center overflow-visible">
+      <section className="max-w-container-max mx-auto px-4 md:px-margin-desktop mb-16 md:mb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-[48%_52%] gap-8 lg:gap-16 items-center overflow-visible">
           <div className="space-y-8 relative z-10">
             <div className="space-y-4">
               <span className="inline-block py-1 px-4 clay-inset text-secondary font-label-mono text-[12px] uppercase tracking-wider">
                 Decentralized Version Control v1.0
               </span>
-              <h1 className="font-headline-lg text-headline-lg lg:text-[56px] lg:leading-[1.1] tracking-tight text-primary">
+              <h1 className="font-headline-lg text-[32px] leading-[1.15] md:text-headline-lg lg:text-[56px] lg:leading-[1.1] tracking-tight text-primary">
                 Version Control for <span className="text-secondary">Autonomous Agents</span>
               </h1>
               <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl leading-relaxed">
@@ -34,7 +34,8 @@ export default function Home() {
               Refer to the project documentation at <Link href="/docs" className="text-secondary hover:underline font-semibold">/docs</Link> for detailed architecture specifications.
             </p>
           </div>
-          <div className="relative flex justify-center items-center lg:justify-end z-0 overflow-visible h-[650px]">
+          {/* Hero visual — hidden on mobile to save space */}
+          <div className="hidden lg:flex relative justify-center items-center lg:justify-end z-0 overflow-visible h-[650px]">
             {/* Glow */}
             <div className="absolute w-[900px] h-[900px] bg-secondary/10 rounded-full blur-[120px] pointer-events-none right-[-150px] top-[80px]" />
 
@@ -59,8 +60,8 @@ export default function Home() {
       </section>
 
       {/* Value Proposition */}
-      <section className="max-w-[1800px] mx-auto px-margin-desktop mb-32 overflow-visible">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+      <section className="max-w-[1800px] mx-auto px-4 md:px-margin-desktop mb-16 md:mb-32 overflow-visible">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-gutter">
           <div className="clay-card p-10 flex flex-col items-center text-center space-y-6 hover:-translate-y-2 transition-transform duration-300">
             <div className="w-32 h-32 flex items-center justify-center overflow-hidden">
               <img alt="Security Icon" className="scale-[2.5] object-center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQf72t8S6TiGag_bhv1305ZNU_dPHpqt6wK5oRVkcUsaejc0VXrBaOOUHBjUk4Hmw-GRiCYRpp0XDDdGwnkF_oSY77ikJfY5IS6WvK8idzhxoYa4DDNpX-ynWSPnhf2s4dl9aXb3jUdjDr0EQWBTdIipepJoVDMIuEaLzK_5HFK0SuaTYs7A8niNpHVnM6UEn4OdxwBd4kbo9mTuFOF3g5ujGhCPyQNAUAKz0kgjzybbyVExqIfVJmuKlTmRJuaDqhFWRbt-UBqWc" />
@@ -92,7 +93,7 @@ export default function Home() {
       </section>
 
       {/* Platform Preview */}
-      <section className="max-w-container-max mx-auto px-margin-desktop mb-32">
+      <section className="max-w-container-max mx-auto px-4 md:px-margin-desktop mb-16 md:mb-32">
         <div className="clay-card p-4 md:p-8">
           <div className="flex items-center justify-between mb-8 px-4">
             <div className="flex items-center gap-4">
@@ -168,11 +169,11 @@ export default function Home() {
       </section>
 
       {/* Social Proof */}
-      <section className="max-w-container-max mx-auto px-margin-desktop mb-32 text-center">
-        <p className="font-label-mono text-label-mono text-on-surface-variant mb-12 uppercase tracking-[0.2em]">
+      <section className="max-w-container-max mx-auto px-4 md:px-margin-desktop mb-16 md:mb-32 text-center">
+        <p className="font-label-mono text-label-mono text-on-surface-variant mb-8 md:mb-12 uppercase tracking-[0.2em]">
           Powered by leading on-chain protocols
         </p>
-        <div className="flex flex-wrap justify-center items-center gap-16 md:gap-24 grayscale opacity-60 hover:grayscale-0 transition-all duration-500">
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-24 grayscale opacity-60 hover:grayscale-0 transition-all duration-500">
           <div className="text-headline-sm font-bold tracking-tighter">SUI NETWORK</div>
           <div className="text-headline-sm font-bold tracking-tighter">WALRUS STORAGE</div>
           <div className="text-headline-sm font-bold tracking-tighter">TATUM GATEWAY</div>
@@ -180,8 +181,8 @@ export default function Home() {
       </section>
 
       {/* CTA Footer */}
-      <section className="max-w-container-max mx-auto px-margin-desktop mb-24">
-        <div className="clay-card p-12 lg:p-24 text-center relative overflow-hidden group">
+      <section className="max-w-container-max mx-auto px-4 md:px-margin-desktop mb-16 md:mb-24">
+        <div className="clay-card p-8 md:p-12 lg:p-24 text-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
           <div className="relative z-10 space-y-8">
             <h2 className="font-headline-lg text-headline-lg max-w-2xl mx-auto">Ready to version your agent brains?</h2>

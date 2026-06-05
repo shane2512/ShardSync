@@ -548,7 +548,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const latestBlobId = versions[0]?.fields.walrus_config_blob_id || "";
 
   if (loading) return (
-    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+    <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">
       <div className="w-48 h-8 bg-surface-container-high animate-pulse rounded-lg mb-4"></div>
       <div className="w-96 h-4 bg-surface-container-high animate-pulse rounded-lg mb-12"></div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -560,7 +560,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   );
 
   return (
-    <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+    <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">
       {/* Modals */}
       {showNewVersion && (
         <NewVersionModal
