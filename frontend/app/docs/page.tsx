@@ -3,14 +3,50 @@
 import { useState } from "react";
 
 const NAV = [
-  { id: "overview", label: "Overview", icon: "auto_awesome" },
-  { id: "quickstart", label: "Quick Start", icon: "rocket_launch" },
-  { id: "agents", label: "Agents", icon: "smart_toy" },
-  { id: "versions", label: "Version Control", icon: "history" },
-  { id: "execution", label: "Execution", icon: "play_circle" },
-  { id: "api", label: "API Reference", icon: "code" },
-  { id: "stack", label: "Tech Stack", icon: "layers" },
+  { id: "overview",  label: "Overview",           icon: "auto_awesome" },
+  { id: "quickstart",label: "Quick Start",         icon: "rocket_launch" },
+  { id: "agents",    label: "Agents",              icon: "smart_toy" },
+  { id: "versions",  label: "Version Control",     icon: "history" },
+  { id: "execution", label: "Execution",           icon: "play_circle" },
+  { id: "tools",     label: "Tools & Chains",      icon: "build" },
+  { id: "api",       label: "API Reference",       icon: "code" },
+  { id: "stack",     label: "Tech Stack",          icon: "layers" },
 ];
+
+const DATA_TOOLS = [
+  { name: "get_metadata",             desc: "Fetch NFT / multitoken metadata by contract address and token IDs" },
+  { name: "get_wallet_balance_by_time",desc: "Get wallet balance at a specific historical timestamp" },
+  { name: "get_wallet_portfolio",     desc: "Return all coin balances and token holdings for a wallet" },
+  { name: "get_owners",               desc: "List all owners of an NFT or token contract" },
+  { name: "check_owner",              desc: "Verify whether an address owns a specific token" },
+  { name: "get_transaction_history",  desc: "Retrieve recent transaction history for a wallet address" },
+  { name: "get_block_by_time",        desc: "Look up block number and info at a given timestamp" },
+  { name: "get_tokens",               desc: "List all ERC-20 / token holdings for a wallet" },
+  { name: "check_malicous_address",   desc: "Security check — flag whether an address is known malicious" },
+  { name: "get_exchange_rate",        desc: "Fetch real-time exchange rate for any crypto / fiat pair" },
+];
+
+const GATEWAY_TOOLS = [
+  { name: "gateway_get_supported_chains",  desc: "Return all blockchain networks available via Tatum RPC Gateway" },
+  { name: "gateway_get_supported_methods", desc: "List RPC methods supported for a specific chain" },
+  { name: "gateway_execute_rpc",           desc: "Execute an arbitrary JSON-RPC call on any supported chain" },
+];
+
+const CHAINS = [
+  "Ethereum", "Polygon", "Arbitrum One", "Optimism", "Base",
+  "BNB Smart Chain", "Avalanche", "Fantom", "Celo", "Gnosis",
+  "Ronin", "Chiliz", "Bitcoin", "Litecoin", "Dogecoin",
+  "Bitcoin Cash", "Solana", "Cardano", "Tezos", "Stellar",
+  "Ripple", "EOS",
+];
+
+const CHAIN_ICONS: Record<string, string> = {
+  Ethereum: "⬡", Polygon: "⬡", "Arbitrum One": "⬡", Optimism: "⬡", Base: "⬡",
+  "BNB Smart Chain": "⬡", Avalanche: "⬡", Fantom: "⬡", Celo: "⬡", Gnosis: "⬡",
+  Ronin: "⬡", Chiliz: "⬡", Bitcoin: "₿", Litecoin: "Ł", Dogecoin: "Ð",
+  "Bitcoin Cash": "₿", Solana: "◎", Cardano: "₳", Tezos: "ꜩ", Stellar: "✦",
+  Ripple: "✕", EOS: "⬡",
+};
 
 export default function DocsPage() {
   const [active, setActive] = useState("overview");
@@ -316,6 +352,102 @@ export default function DocsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {active === "tools" && (
+            <section className="space-y-10">
+              {/* Header */}
+              <div>
+                <span className="inline-block py-1 px-3 clay-inset text-secondary font-label-mono text-[11px] uppercase tracking-wider mb-3">Tatum Integration</span>
+                <h1 className="font-headline-lg text-headline-lg text-primary mb-3">Supported Tools &amp; Chains</h1>
+                <p className="text-on-surface-variant font-body-md leading-relaxed max-w-2xl">
+                  ShardSync uses <strong className="text-primary">Tatum MCP</strong> (Model Context Protocol) alongside the <strong className="text-primary">Tatum Data API</strong> to give agents real blockchain intelligence.
+                  When you run an agent, your natural-language prompt is matched to the best tool using NLP keyword scoring.
+                  The tool is first called through the <strong className="text-secondary">MCP server subprocess</strong> (JSON-RPC over stdio) — if that's unavailable, it falls back to the <strong className="text-secondary">Data API in-process</strong>.
+                  Every response is logged to Walrus and the log blob ID is committed on-chain.
+                </p>
+              </div>
+
+              {/* Blockchain Data Tools */}
+              <div className="clay-card p-6 rounded-2xl space-y-4">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-9 h-9 bg-secondary/15 rounded-xl flex items-center justify-center">
+                    <span className="material-symbols-outlined text-secondary text-[18px]">dataset</span>
+                  </div>
+                  <div>
+                    <h2 className="font-headline-sm text-[18px] text-primary">Blockchain Data</h2>
+                    <span className="font-label-mono text-[11px] text-secondary uppercase tracking-wider">10 tools — via Tatum Data API</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {DATA_TOOLS.map((t) => (
+                    <div key={t.name} className="flex gap-4 clay-inset p-3.5 rounded-xl items-start">
+                      <code className="text-secondary font-mono text-[12px] shrink-0 mt-0.5 leading-5">{t.name}</code>
+                      <p className="text-on-surface-variant text-[13px] leading-relaxed">{t.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* RPC Gateway Tools */}
+              <div className="clay-card p-6 rounded-2xl space-y-4">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-9 h-9 bg-purple-500/15 rounded-xl flex items-center justify-center">
+                    <span className="material-symbols-outlined text-purple-400 text-[18px]">hub</span>
+                  </div>
+                  <div>
+                    <h2 className="font-headline-sm text-[18px] text-primary">RPC Gateway</h2>
+                    <span className="font-label-mono text-[11px] text-purple-400 uppercase tracking-wider">3 tools — via Tatum RPC Gateway</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {GATEWAY_TOOLS.map((t) => (
+                    <div key={t.name} className="flex gap-4 clay-inset p-3.5 rounded-xl items-start">
+                      <code className="text-purple-400 font-mono text-[12px] shrink-0 mt-0.5 leading-5">{t.name}</code>
+                      <p className="text-on-surface-variant text-[13px] leading-relaxed">{t.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* How to enable a tool */}
+              <div className="clay-inset p-5 rounded-2xl border border-secondary/20">
+                <h3 className="font-headline-sm text-[15px] text-primary mb-2">How to enable tools for your agent</h3>
+                <p className="text-on-surface-variant text-[13px] mb-3">Add tool names to <code className="text-secondary">mcp_tools_enabled</code> in your agent config. Then use natural language in the Run Agent modal — the NLP router picks the best match automatically.</p>
+                <pre className="bg-black/20 rounded-xl p-4 text-[12px] text-secondary font-mono overflow-x-auto">{`{
+  "mcp_tools_enabled": [
+    "get_wallet_portfolio",
+    "check_malicous_address",
+    "get_transaction_history",
+    "gateway_get_supported_chains"
+  ]
+}`}</pre>
+              </div>
+
+              {/* Supported chains */}
+              <div className="clay-card p-6 rounded-2xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <span className="material-symbols-outlined text-blue-400 text-[18px]">language</span>
+                  </div>
+                  <div>
+                    <h2 className="font-headline-sm text-[18px] text-primary">Supported Blockchains</h2>
+                    <span className="font-label-mono text-[11px] text-blue-400 uppercase tracking-wider">{CHAINS.length} networks</span>
+                  </div>
+                </div>
+                <p className="text-on-surface-variant text-[13px]">
+                  Set <code className="text-secondary">target_chain</code> in your agent config to any of these. Sui routes through the Tatum JSON-RPC gateway; all others use the Tatum Data API.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {CHAINS.map((c) => (
+                    <div key={c} className="clay-inset px-3 py-2.5 rounded-xl flex items-center gap-2">
+                      <span className="text-secondary text-[14px] font-mono shrink-0">{CHAIN_ICONS[c] ?? "⬡"}</span>
+                      <span className="text-[13px] text-primary font-medium truncate">{c}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}
