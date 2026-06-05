@@ -152,6 +152,25 @@ export async function runAgent(data: {
   });
 }
 
+export interface RunPromptResponse {
+  walrusLogBlobId: string;
+  executionLog: Record<string, unknown>;
+  durationMs: number;
+  toolSelected: string | null;
+}
+
+export async function runAgentWithPrompt(data: {
+  registryObjectId: string;
+  versionObjectId: string;
+  walletAddress?: string;
+  prompt: string;
+}) {
+  return apiFetch<RunPromptResponse>("/agents/run-prompt", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function listExecutions(cursor?: string, limit = 50) {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
