@@ -488,38 +488,87 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
       // 3. Execute the selected tool
       let mcpResult: { success: boolean; output: unknown; error?: string };
 
-      if (isSuiChain) {
-        // Route through Tatum Sui RPC Gateway
+      // ── Gateway tools — chain-agnostic, handled before Sui/EVM split ───
+      if (selectedTool.name === "gateway_get_supported_chains") {
+        mcpResult = {
+          success: true,
+          output: {
+            tool: "gateway_get_supported_chains",
+            source: "Tatum RPC Gateway",
+            supported_chains: [
+              "ethereum", "polygon", "arbitrum", "optimism", "base",
+              "bsc", "avalanche", "fantom", "celo", "gnosis",
+              "ronin", "chiliz", "bitcoin", "litecoin", "dogecoin",
+              "bitcoin-cash", "solana", "cardano", "tezos", "stellar",
+              "ripple", "eos",
+            ],
+            total: 22,
+            note: "Sui uses the Tatum JSON-RPC gateway (sui-testnet.gateway.tatum.io) separately.",
+          },
+        };
+
+      } else if (selectedTool.name === "gateway_get_supported_methods") {
+        const r = await callTatumMcpTool("gateway_get_supported_methods", { chain: targetChain });
+        mcpResult = { success: r.success, output: r.output, error: r.error };
+
+      } else if (selectedTool.name === "gateway_execute_rpc") {
+        const r = await callTatumMcpTool("gateway_execute_rpc", { chain: targetChain, method: "eth_blockNumber", params: [] });
+        mcpResult = { success: r.success, output: r.output, error: r.error };
+
+      // ── Sui-native tools — routed through suix_* JSON-RPC ──────────────
+      } else if (isSuiChain) {
         try {
           if (selectedTool.name === "get_transaction_history") {
             const txResult = await querySuiTransactions(resolvedAddress, 10);
             mcpResult = { success: true, output: { rpc_method: "suix_queryTransactionBlocks", address: resolvedAddress, data: txResult } };
+
           } else if (selectedTool.name === "get_wallet_portfolio") {
             const [balances, suiBalance] = await Promise.all([getSuiAllBalances(resolvedAddress), getSuiBalance(resolvedAddress)]);
             mcpResult = { success: true, output: { rpc_method: "suix_getAllBalances", address: resolvedAddress, sui_native: suiBalance, all_balances: balances } };
+
           } else if (selectedTool.name === "check_malicious_address" || selectedTool.name === "check_malicous_address") {
             const r = await callTatumMcpTool("check_malicious_address", { address: resolvedAddress });
             mcpResult = { success: r.success, output: r.output, error: r.error };
+
           } else if (selectedTool.name === "get_exchange_rate") {
-            const r = await callTatumMcpTool("get_exchange_rate", { symbol: "SUI", basePair: "USD" });
+            const symbolMatch = prompt.match(/\b(BTC|ETH|SOL|SUI|MATIC|BNB|AVAX|ADA|XRP|DOGE|DOT|LINK|UNI)\b/i);
+            const symbol = symbolMatch ? symbolMatch[1].toUpperCase() : "SUI";
+            const r = await callTatumMcpTool("get_exchange_rate", { symbol, basePair: "USD" });
             mcpResult = { success: r.success, output: r.output, error: r.error };
+
           } else {
-            const suiBal = await getSuiBalance(resolvedAddress);
-            mcpResult = { success: true, output: { rpc_method: "suix_getBalance", address: resolvedAddress, data: suiBal } };
+            // EVM-only tool requested on a Sui chain — should be filtered by registry, safe fallback
+            mcpResult = {
+              success: false,
+              output: null,
+              error: `Tool "${selectedTool.name}" does not support Sui chains. Change target_chain in the agent config to an EVM chain (e.g. ethereum, polygon).`,
+            };
           }
         } catch (e: any) {
           mcpResult = { success: false, output: null, error: e.message || String(e) };
         }
-      } else {
-        // Route through Tatum Data API
-        const toolArgs: Record<string, unknown> = {};
-        if (selectedTool.requiresAddress) { toolArgs.addresses = resolvedAddress; toolArgs.address = resolvedAddress; }
-        if (selectedTool.requiresChain) toolArgs.chain = targetChain;
-        if (selectedTool.name === "get_wallet_portfolio") toolArgs.tokenTypes = "native";
-        if (selectedTool.name === "get_exchange_rate") { toolArgs.symbol = "SUI"; toolArgs.basePair = "USD"; }
 
-        const r = await callTatumMcpTool(selectedTool.name, toolArgs);
-        mcpResult = { success: r.success, output: r.output, error: r.error };
+      // ── EVM / Data API tools ────────────────────────────────────────────
+      } else {
+        try {
+          const toolArgs: Record<string, unknown> = {};
+          if (selectedTool.requiresAddress) { toolArgs.addresses = resolvedAddress; toolArgs.address = resolvedAddress; }
+          if (selectedTool.requiresChain)   { toolArgs.chain = targetChain; }
+
+          if (selectedTool.name === "get_wallet_portfolio") toolArgs.tokenTypes = "native";
+          if (selectedTool.name === "get_exchange_rate") {
+            const symbolMatch = prompt.match(/\b(BTC|ETH|SOL|SUI|MATIC|BNB|AVAX|ADA|XRP|DOGE|DOT|LINK|UNI)\b/i);
+            toolArgs.symbol   = symbolMatch ? symbolMatch[1].toUpperCase() : "ETH";
+            toolArgs.basePair = "USD";
+          }
+          if (selectedTool.name === "get_metadata")     { toolArgs.tokenAddress = resolvedAddress; toolArgs.tokenIds = ["1"]; }
+          if (selectedTool.name === "get_block_by_time") { toolArgs.time = Math.floor(Date.now() / 1000); }
+
+          const r = await callTatumMcpTool(selectedTool.name, toolArgs);
+          mcpResult = { success: r.success, output: r.output, error: r.error };
+        } catch (e: any) {
+          mcpResult = { success: false, output: null, error: e.message || String(e) };
+        }
       }
 
       executionLog = {
