@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@tatumio/blockchain-mcp": "^1.0.5",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
