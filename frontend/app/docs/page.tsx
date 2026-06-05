@@ -54,8 +54,8 @@ export default function DocsPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--color-surface)" }}>
 
-      <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop flex gap-10 py-8 md:py-12 w-full">
-        {/* Sidebar */}
+      <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop flex flex-col md:flex-row gap-10 py-8 md:py-12 w-full">
+        {/* Sidebar — desktop only */}
         <aside className="hidden md:flex flex-col w-56 shrink-0 gap-1 sticky top-28 self-start">
           <p className="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant mb-3 pl-3">Contents</p>
           {NAV.map((n) => (
@@ -74,21 +74,23 @@ export default function DocsPage() {
           ))}
         </aside>
 
-        {/* Mobile tabs */}
-        <div className="md:hidden flex gap-2 overflow-x-auto pb-2 w-full mb-6 shrink-0">
-          {NAV.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => setActive(n.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${active === n.id ? "clay-button-primary text-white" : "clay-button-secondary text-primary"}`}
-            >
-              {n.label}
-            </button>
-          ))}
-        </div>
-
         {/* Main content */}
         <main className="flex-1 min-w-0 space-y-10">
+
+          {/* Mobile tabs — inside main so they stack above content */}
+          <div className="md:hidden flex gap-2 overflow-x-auto pb-2 w-full shrink-0 -mx-1 px-1">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => setActive(n.id)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+                  active === n.id ? "clay-button-primary text-white" : "clay-button-secondary text-primary"
+                }`}
+              >
+                {n.label}
+              </button>
+            ))}
+          </div>
 
           {active === "overview" && (
             <section className="space-y-8">

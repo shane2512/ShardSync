@@ -20,7 +20,7 @@ export default function Home() {
                 Version, inspect, fork, and roll back autonomous AI agents and their evolving configuration brains with cryptographic guarantees on Walrus storage, coordinated by Sui and indexed by Tatum.
               </p>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4">
               <Link href="/agents/create" className="clay-button-primary px-8 py-4 rounded-2xl text-on-secondary font-headline-sm flex items-center gap-2 group active:scale-95 no-underline">
                 Get Started
                 <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
