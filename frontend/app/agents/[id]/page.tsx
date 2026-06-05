@@ -179,9 +179,11 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
   onSuccess: (result: { blobId: string; log: Record<string, unknown> }) => void;
 }) {
   const [prompt, setPrompt] = useState("");
-  const [phase, setPhase] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "running" | "signing" | "done" | "error">("idle");
   const [log, setLog] = useState<Record<string, unknown> | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const isConnected = useIsWalletConnected();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const toolSelection = log?.tool_selection as Record<string, unknown> | undefined;
   const selectedTool = toolSelection?.selected as string | null;
@@ -190,7 +192,7 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
 
   const handleRun = async () => {
     if (!prompt.trim() || phase !== "idle") return;
-    setPhase("running"); setLog(null);
+    setPhase("running"); setLog(null); setErrorMsg("");
     try {
       const res = await runAgentWithPrompt({
         registryObjectId,
@@ -199,8 +201,44 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
         prompt: prompt.trim(),
       });
       setLog(res.executionLog);
-      setPhase(res.executionLog.success ? "done" : "error");
-      if (res.executionLog.success) onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+
+      if (!res.executionLog.success) {
+        setPhase("error");
+        return;
+      }
+
+      // If wallet is connected, trigger on-chain log_execution signing
+      if (isConnected && walletAddress && PACKAGE_ID) {
+        setPhase("signing");
+        const tx = new Transaction();
+        tx.moveCall({
+          target: `${PACKAGE_ID}::agent_registry::log_execution`,
+          arguments: [
+            tx.object(registryObjectId),
+            tx.object(versionObjectId),
+            tx.pure.string(res.walrusLogBlobId),
+            tx.pure.u64(res.durationMs),
+            tx.pure.bool(true),
+            tx.object("0x6"),
+          ],
+        });
+        signAndExecute({ transaction: tx }, {
+          onSuccess: () => {
+            setPhase("done");
+            onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+          },
+          onError: (e) => {
+            // Execution already logged to Walrus — signing failed but data is safe
+            setErrorMsg(`On-chain signing failed: ${e.message}. Walrus log was saved.`);
+            setPhase("error");
+            onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+          },
+        });
+      } else {
+        // No wallet — still mark done, log is on Walrus
+        setPhase("done");
+        onSuccess({ blobId: res.walrusLogBlobId, log: res.executionLog });
+      }
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       setPhase("error");
@@ -310,15 +348,17 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
           <div className="flex gap-3">
             <button
               onClick={handleRun}
-              disabled={!prompt.trim() || phase === "running"}
+              disabled={!prompt.trim() || phase === "running" || phase === "signing"}
               className="flex-1 py-4 clay-button-primary text-white flex items-center justify-center gap-2 font-headline-sm disabled:opacity-50 rounded-2xl"
             >
               {phase === "running" ? (
-                <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Running...</>
+                <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Running MCP tools...</>
+              ) : phase === "signing" ? (
+                <><span className="material-symbols-outlined animate-pulse text-[18px]">draw</span>Waiting for wallet signature...</>
               ) : phase === "done" ? (
                 <><span className="material-symbols-outlined">check_circle</span>Run Again</>
               ) : (
-                <><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>Execute Agent</>
+                <><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>Execute Agent</>
               )}
             </button>
             {(phase === "done" || phase === "error") && (
