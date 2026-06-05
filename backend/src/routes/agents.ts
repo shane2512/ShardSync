@@ -490,22 +490,8 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
 
       // ── Gateway tools — chain-agnostic, handled before Sui/EVM split ───
       if (selectedTool.name === "gateway_get_supported_chains") {
-        mcpResult = {
-          success: true,
-          output: {
-            tool: "gateway_get_supported_chains",
-            source: "Tatum RPC Gateway",
-            supported_chains: [
-              "ethereum", "polygon", "arbitrum", "optimism", "base",
-              "bsc", "avalanche", "fantom", "celo", "gnosis",
-              "ronin", "chiliz", "bitcoin", "litecoin", "dogecoin",
-              "bitcoin-cash", "solana", "cardano", "tezos", "stellar",
-              "ripple", "eos",
-            ],
-            total: 22,
-            note: "Sui uses the Tatum JSON-RPC gateway (sui-testnet.gateway.tatum.io) separately.",
-          },
-        };
+        const r = await callTatumMcpTool("gateway_get_supported_chains", {});
+        mcpResult = { success: r.success, output: r.output, error: r.error };
 
       } else if (selectedTool.name === "gateway_get_supported_methods") {
         const r = await callTatumMcpTool("gateway_get_supported_methods", { chain: targetChain });
