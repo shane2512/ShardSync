@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import { shortenId } from "../lib/api";
 import { useState } from "react";
+import { useNetwork, type SuiNetwork } from "../hooks/useNetwork";
 
 const navLinks = [
   { href: "/", label: "Dashboard" },
@@ -18,6 +19,10 @@ export function Navbar() {
   const pathname = usePathname();
   const account = useCurrentAccount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { network, setNetwork } = useNetwork();
+
+  const toggleNetwork = () =>
+    setNetwork(network === "testnet" ? "mainnet" : "testnet");
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md">
@@ -57,6 +62,20 @@ export function Navbar() {
               {shortenId(account.address)}
             </span>
           )}
+
+          {/* Network toggle pill */}
+          <button
+            onClick={toggleNetwork}
+            title={`Switch to ${network === "testnet" ? "mainnet" : "testnet"}`}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-mono text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 border ${
+              network === "mainnet"
+                ? "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                : "bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20"
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${network === "mainnet" ? "bg-amber-400" : "bg-secondary"} animate-pulse`} />
+            {network}
+          </button>
 
           {/* Connect button — shrink label on mobile */}
           <div style={{ "--connect-wallet-button-color": "var(--color-on-secondary)", "--connect-wallet-button-background": "var(--color-secondary)" } as React.CSSProperties}>
@@ -106,6 +125,21 @@ export function Navbar() {
               </span>
             </div>
           )}
+          {/* Network toggle in mobile menu */}
+          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+            <span className="font-label-mono text-[12px] text-on-surface-variant">Network</span>
+            <button
+              onClick={toggleNetwork}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-label-mono text-[11px] font-bold uppercase tracking-wider border transition-all ${
+                network === "mainnet"
+                  ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                  : "bg-secondary/10 text-secondary border-secondary/20"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${network === "mainnet" ? "bg-amber-400" : "bg-secondary"} animate-pulse`} />
+              {network === "mainnet" ? "Mainnet" : "Testnet"}
+            </button>
+          </div>
         </div>
       )}
     </header>

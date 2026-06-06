@@ -11,6 +11,7 @@ services:
         value: production
       - key: PORT
         value: 4000
+      # ── Testnet ──────────────────────────────────────────────────────
       - key: TATUM_SUI_RPC_URL
         value: https://sui-testnet.gateway.tatum.io/
       - key: WALRUS_PUBLISHER_URL
@@ -19,7 +20,16 @@ services:
         value: https://aggregator.walrus-testnet.walrus.space
       - key: SUI_NETWORK
         value: testnet
+      # ── Mainnet ───────────────────────────────────────────────────────
+      - key: TATUM_SUI_MAINNET_RPC_URL
+        value: https://sui-mainnet.gateway.tatum.io/
+      - key: WALRUS_MAINNET_PUBLISHER_URL
+        value: https://publisher.walrus.space
+      - key: WALRUS_MAINNET_AGGREGATOR_URL
+        value: https://aggregator.walrus.space
+      - key: SHARDSYNC_MAINNET_PACKAGE_ID
+        value: "0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4"
       # Set these in Render dashboard (do NOT commit secrets):
       # TATUM_API_KEY
-      # SHARDSYNC_PACKAGE_ID
+      # SHARDSYNC_PACKAGE_ID  (testnet)
       # FRONTEND_URL  (your Vercel URL, e.g. https://shardsync.vercel.app)

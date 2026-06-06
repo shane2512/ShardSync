@@ -6,8 +6,14 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { getAgent, listVersions, listExecutions, readBlob, runAgentWithPrompt, createVersion, forkAgent, shortenId, timeAgo } from "../../lib/api";
 import { useWalletAddress, useIsWalletConnected } from "../../hooks/useWalletAddress";
+import { useNetwork } from "../../hooks/useNetwork";
 
-const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
+const TESTNET_PKG = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
+const MAINNET_PKG = process.env.NEXT_PUBLIC_MAINNET_PACKAGE_ID || "";
+
+function getPackageId(network: string): string {
+  return network === "mainnet" ? MAINNET_PKG : TESTNET_PKG;
+}
 
 interface VersionFields {
   agent_id: string;
@@ -19,9 +25,9 @@ interface VersionFields {
 interface VersionItem { objectId: string; fields: VersionFields; }
 
 // ─── Modal: New Version ────────────────────────────────────────────────
-function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onSuccess }: {
+function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onSuccess, network }: {
   agentId: string; registryObjectId: string; latestBlobId: string;
-  onClose: () => void; onSuccess: () => void;
+  onClose: () => void; onSuccess: () => void; network: string;
 }) {
   const [config, setConfig] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(false);
@@ -53,7 +59,7 @@ function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onS
       setLoadingConfig(true);
       setConfig("// Fetching previous version configuration from Walrus...");
       try {
-        const res = await readBlob(latestBlobId);
+        const res = await readBlob(latestBlobId, network);
         if (res && res.content) {
           try {
             const parsed = JSON.parse(res.content);
@@ -85,12 +91,12 @@ function NewVersionModal({ agentId, registryObjectId, latestBlobId, onClose, onS
     setPhase("uploading");
     try {
       const parsed = JSON.parse(config);
-      const res = await createVersion({ agentId, registryObjectId, config: parsed, commitMessage: commitMsg });
+      const res = await createVersion({ agentId, registryObjectId, config: parsed, commitMessage: commitMsg }, network);
 
       setPhase("signing");
       const tx = new Transaction();
       tx.moveCall({
-        target: `${PACKAGE_ID}::agent_registry::create_version`,
+        target: `${getPackageId(network)}::agent_registry::create_version`,
         arguments: [
           tx.object(registryObjectId),           // &mut AgentRegistry
           tx.pure.string(res.walrusConfigBlobId), // walrus_config_blob_id
@@ -171,12 +177,13 @@ const EXAMPLE_PROMPTS = [
   "Get the recent transfers and activity",
 ];
 
-function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClose, onSuccess }: {
+function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClose, onSuccess, network }: {
   versionObjectId: string;
   registryObjectId: string;
   walletAddress: string;
   onClose: () => void;
   onSuccess: (result: { blobId: string; log: Record<string, unknown> }) => void;
+  network: string;
 }) {
   const [prompt, setPrompt] = useState("");
   const [phase, setPhase] = useState<"idle" | "running" | "signing" | "done" | "error">("idle");
@@ -199,7 +206,7 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
         versionObjectId,
         walletAddress: walletAddress || undefined,
         prompt: prompt.trim(),
-      });
+      }, network);
       setLog(res.executionLog);
 
       if (!res.executionLog.success) {
@@ -208,11 +215,11 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
       }
 
       // If wallet is connected, trigger on-chain log_execution signing
-      if (isConnected && walletAddress && PACKAGE_ID) {
+      if (isConnected && walletAddress && getPackageId(network)) {
         setPhase("signing");
         const tx = new Transaction();
         tx.moveCall({
-          target: `${PACKAGE_ID}::agent_registry::log_execution`,
+          target: `${getPackageId(network)}::agent_registry::log_execution`,
           arguments: [
             tx.object(registryObjectId),
             tx.object(versionObjectId),
@@ -374,8 +381,8 @@ function RunAgentModal({ versionObjectId, registryObjectId, walletAddress, onClo
 }
 
 // ─── Modal: Fork Agent ─────────────────────────────────────────────────
-function ForkModal({ sourceVersion, onClose, onSuccess }: {
-  sourceVersion: VersionItem; onClose: () => void; onSuccess: () => void;
+function ForkModal({ sourceVersion, onClose, onSuccess, network }: {
+  sourceVersion: VersionItem; onClose: () => void; onSuccess: () => void; network: string;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -392,12 +399,12 @@ function ForkModal({ sourceVersion, onClose, onSuccess }: {
         sourceVersionId: sourceVersion.objectId,
         name: name.trim(), description: description.trim(),
         config: {}, commitMessage: commitMsg,
-      });
+      }, network);
 
       setPhase("signing");
       const tx = new Transaction();
       tx.moveCall({
-        target: `${PACKAGE_ID}::agent_registry::fork_agent`,
+        target: `${getPackageId(network)}::agent_registry::fork_agent`,
         arguments: [
           tx.object(sourceVersion.objectId),      // &AgentVersion
           tx.pure.string(name.trim()),
@@ -490,13 +497,14 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const owner = useWalletAddress();
   const isConnected = useIsWalletConnected();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { network } = useNetwork();
 
   const loadData = async () => {
     try {
       const [agentRes, versionsRes, execRes] = await Promise.all([
-        getAgent(id),
-        owner ? listVersions(owner) : Promise.resolve({ data: [] }),
-        listExecutions(),
+        getAgent(id, network),
+        owner ? listVersions(owner, network) : Promise.resolve({ data: [] }),
+        listExecutions(network),
       ]);
       setAgent(agentRes.data.content.fields as Record<string, unknown>);
 
@@ -517,7 +525,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadData(); }, [id, owner]);
+  useEffect(() => { loadData(); }, [id, owner, network]);
 
   const handleRunSuccess = ({ blobId }: { blobId: string; log: Record<string, unknown> }) => {
     setRunResult(`✓ Execution logged to Walrus: ${shortenId(blobId, 8)}`);
@@ -527,7 +535,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const handleViewBlob = async (blobId: string) => {
     setBlobView({ id: blobId, content: "Loading..." });
     try {
-      const res = await readBlob(blobId);
+      const res = await readBlob(blobId, network);
       setBlobView({ id: blobId, content: res.content || "(blob not available)" });
     } catch { setBlobView({ id: blobId, content: "(error reading blob)" }); }
   };
@@ -537,7 +545,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     setDiffBlobs({ left: left.fields.walrus_config_blob_id, right: right.fields.walrus_config_blob_id, leftVer: `v${left.fields.version_number}`, rightVer: `v${right.fields.version_number}` });
     setDiffContent(null);
     try {
-      const [l, r] = await Promise.all([readBlob(left.fields.walrus_config_blob_id), readBlob(right.fields.walrus_config_blob_id)]);
+      const [l, r] = await Promise.all([readBlob(left.fields.walrus_config_blob_id, network), readBlob(right.fields.walrus_config_blob_id, network)]);
       setDiffContent({ left: l.content || "(unavailable)", right: r.content || "(unavailable)" });
     } catch { setDiffContent({ left: "(error)", right: "(error)" }); }
   };
@@ -567,6 +575,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           agentId={id} registryObjectId={id} latestBlobId={latestBlobId}
           onClose={() => setShowNewVersion(false)}
           onSuccess={() => { setShowNewVersion(false); setLoading(true); loadData(); }}
+          network={network}
         />
       )}
       {showRunModal && versions.length > 0 && (
@@ -576,6 +585,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           walletAddress={owner}
           onClose={() => setShowRunModal(false)}
           onSuccess={(r) => { handleRunSuccess(r); setShowRunModal(false); }}
+          network={network}
         />
       )}
       {forkVersion && (
@@ -583,6 +593,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           sourceVersion={forkVersion}
           onClose={() => setForkVersion(null)}
           onSuccess={() => { setForkVersion(null); }}
+          network={network}
         />
       )}
       {blobView && (

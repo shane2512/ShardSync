@@ -10,7 +10,7 @@ import {
   getSuiAllBalances,
   querySuiTransactions,
 } from "../services/tatum.js";
-import { getEnv } from "../config/env.js";
+import { getEnv, getNetworkConfig, parseNetwork } from "../config/env.js";
 import {
   CreateAgentSchema,
   UpdateAgentSchema,
@@ -23,10 +23,11 @@ export const agentRouter = Router();
 
 // ─── Health ───────────────────────────────────────────────────────────
 
-agentRouter.get("/health", async (_req: Request, res: Response) => {
+agentRouter.get("/health", async (req: Request, res: Response) => {
   try {
-    const checkpoint = await getLatestCheckpoint();
-    res.json({ status: "ok", suiCheckpoint: checkpoint });
+    const net = getNetworkConfig(parseNetwork(req.query.network));
+    const checkpoint = await getLatestCheckpoint(net.rpcUrl);
+    res.json({ status: "ok", suiCheckpoint: checkpoint, network: net.network });
   } catch (err) {
     res.status(503).json({ status: "error", error: String(err) });
   }
@@ -44,20 +45,17 @@ agentRouter.post("/agents", async (req: Request, res: Response) => {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-
     const { name, description, config, commitMessage } = parsed.data;
+    const net = getNetworkConfig(parseNetwork(req.query.network));
 
-    // Upload config to Walrus
     const configJson = JSON.stringify(config, null, 2);
-    const { blobId } = await storeBlob(configJson);
+    const { blobId } = await storeBlob(configJson, net.walrusPublisher);
 
-    // Return the blob ID and contract call parameters.
-    // The frontend will build and sign the transaction client-side.
-    const env = getEnv();
     res.json({
       walrusConfigBlobId: blobId,
+      network: net.network,
       contractCall: {
-        packageId: env.SHARDSYNC_PACKAGE_ID,
+        packageId: net.packageId,
         module: "agent_registry",
         function: "create_agent",
         arguments: [name, description, blobId, commitMessage],
@@ -77,17 +75,17 @@ agentRouter.post("/agents/version", async (req: Request, res: Response) => {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-
     const { registryObjectId, config, commitMessage } = parsed.data;
+    const net = getNetworkConfig(parseNetwork(req.query.network));
 
     const configJson = JSON.stringify(config, null, 2);
-    const { blobId } = await storeBlob(configJson);
+    const { blobId } = await storeBlob(configJson, net.walrusPublisher);
 
-    const env = getEnv();
     res.json({
       walrusConfigBlobId: blobId,
+      network: net.network,
       contractCall: {
-        packageId: env.SHARDSYNC_PACKAGE_ID,
+        packageId: net.packageId,
         module: "agent_registry",
         function: "create_version",
         arguments: [registryObjectId, blobId, commitMessage],
@@ -107,18 +105,17 @@ agentRouter.post("/agents/fork", async (req: Request, res: Response) => {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-
-    const { sourceVersionId, name, description, config, commitMessage } =
-      parsed.data;
+    const { sourceVersionId, name, description, config, commitMessage } = parsed.data;
+    const net = getNetworkConfig(parseNetwork(req.query.network));
 
     const configJson = JSON.stringify(config, null, 2);
-    const { blobId } = await storeBlob(configJson);
+    const { blobId } = await storeBlob(configJson, net.walrusPublisher);
 
-    const env = getEnv();
     res.json({
       walrusConfigBlobId: blobId,
+      network: net.network,
       contractCall: {
-        packageId: env.SHARDSYNC_PACKAGE_ID,
+        packageId: net.packageId,
         module: "agent_registry",
         function: "fork_agent",
         arguments: [sourceVersionId, name, description, blobId, commitMessage],
@@ -426,17 +423,18 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
 
     const startTime = Date.now();
     const targetWallet = walletAddress || "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const net = getNetworkConfig(parseNetwork(req.query.network));
 
     // 1. Fetch config from Walrus via the version object
     let config: Record<string, unknown> = {};
     let configBlobId = "";
     try {
       if (versionObjectId?.startsWith("0x")) {
-        const versionObj = await getObject(versionObjectId) as any;
+        const versionObj = await getObject(versionObjectId, net.rpcUrl) as any;
         configBlobId = versionObj?.data?.content?.fields?.walrus_config_blob_id || "";
       }
       if (configBlobId) {
-        const configJson = await readBlob(configBlobId);
+        const configJson = await readBlob(configBlobId, net.walrusAggregator);
         config = JSON.parse(configJson);
       }
     } catch (e) {
@@ -578,13 +576,14 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
 
     // 4. Persist log to Walrus
     const logJson = JSON.stringify(executionLog, null, 2);
-    const { blobId: logBlobId } = await storeBlob(logJson);
+    const { blobId: logBlobId } = await storeBlob(logJson, net.walrusPublisher);
 
     res.json({
       walrusLogBlobId: logBlobId,
       executionLog,
       durationMs: executionLog.duration_ms,
       toolSelected: selectedTool?.name || null,
+      network: net.network,
     });
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -603,6 +602,7 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
 
     const { registryObjectId, versionObjectId, walletAddress } = parsed.data;
     const targetWallet = walletAddress || "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const net = getNetworkConfig(parseNetwork(req.query.network));
 
     const startTime = Date.now();
     let configBlobId = "";
@@ -611,7 +611,7 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
     // 1. Fetch the version object from Sui to locate the Walrus config blob ID
     try {
       if (versionObjectId && versionObjectId.startsWith("0x")) {
-        const versionObj = await getObject(versionObjectId) as any;
+        const versionObj = await getObject(versionObjectId, net.rpcUrl) as any;
         configBlobId = versionObj?.data?.content?.fields?.walrus_config_blob_id || "";
       }
     } catch (e) {
@@ -753,15 +753,15 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
 
     // 7. Persist execution log onto Walrus
     const logJson = JSON.stringify(executionLog, null, 2);
-    const { blobId: logBlobId } = await storeBlob(logJson);
+    const { blobId: logBlobId } = await storeBlob(logJson, net.walrusPublisher);
 
-    const env = getEnv();
     res.json({
       walrusLogBlobId: logBlobId,
       executionLog,
       durationMs,
+      network: net.network,
       contractCall: {
-        packageId: env.SHARDSYNC_PACKAGE_ID,
+        packageId: net.packageId,
         module: "agent_registry",
         function: "log_execution",
         arguments: [
@@ -787,11 +787,9 @@ agentRouter.get("/agents", async (req: Request, res: Response) => {
       res.status(400).json({ error: "owner query param required" });
       return;
     }
-
-    const env = getEnv();
-    const structType = `${env.SHARDSYNC_PACKAGE_ID}::agent_registry::AgentRegistry`;
-    const data = await getOwnedObjects(owner, structType);
-
+    const net = getNetworkConfig(parseNetwork(req.query.network));
+    const structType = `${net.packageId}::agent_registry::AgentRegistry`;
+    const data = await getOwnedObjects(owner, structType, null, 50, net.rpcUrl);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -802,8 +800,8 @@ agentRouter.get("/agents", async (req: Request, res: Response) => {
 
 agentRouter.get("/agents/:objectId", async (req: Request, res: Response) => {
   try {
-    const objectId = req.params.objectId as string;
-    const data = await getObject(objectId);
+    const net = getNetworkConfig(parseNetwork(req.query.network));
+    const data = await getObject(req.params.objectId as string, net.rpcUrl);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -819,11 +817,9 @@ agentRouter.get("/versions", async (req: Request, res: Response) => {
       res.status(400).json({ error: "owner query param required" });
       return;
     }
-
-    const env = getEnv();
-    const structType = `${env.SHARDSYNC_PACKAGE_ID}::agent_registry::AgentVersion`;
-    const data = await getOwnedObjects(owner, structType);
-
+    const net = getNetworkConfig(parseNetwork(req.query.network));
+    const structType = `${net.packageId}::agent_registry::AgentVersion`;
+    const data = await getOwnedObjects(owner, structType, null, 50, net.rpcUrl);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -834,18 +830,17 @@ agentRouter.get("/versions", async (req: Request, res: Response) => {
 
 agentRouter.get("/executions", async (req: Request, res: Response) => {
   try {
-    const env = getEnv();
+    const net = getNetworkConfig(parseNetwork(req.query.network));
     const cursor = (req.query.cursor as string) || null;
     const limit = parseInt(req.query.limit as string) || 50;
-
     const data = await queryEvents(
-      env.SHARDSYNC_PACKAGE_ID,
+      net.packageId,
       "agent_registry",
       "ExecutionLogged",
       cursor,
-      limit
+      limit,
+      net.rpcUrl
     );
-
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -856,9 +851,10 @@ agentRouter.get("/executions", async (req: Request, res: Response) => {
 
 agentRouter.get("/blobs/:blobId", async (req: Request, res: Response) => {
   try {
+    const net = getNetworkConfig(parseNetwork(req.query.network));
     const blobId = req.params.blobId as string;
     try {
-      const content = await readBlob(blobId);
+      const content = await readBlob(blobId, net.walrusAggregator);
       res.json({ blobId, content, available: true });
     } catch {
       res.json({ blobId, content: null, available: false });

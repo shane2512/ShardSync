@@ -1,6 +1,7 @@
 /**
  * ShardSync API client — typed functions for all backend endpoints.
  * All chain access goes through Tatum via the backend.
+ * Every mutating call passes `network` so the backend uses the correct RPC URL.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
@@ -67,8 +68,10 @@ export interface EventsResponse {
 
 // ─── Health ───────────────────────────────────────────────────────────
 
-export async function checkHealth() {
-  return apiFetch<{ status: string; suiCheckpoint: string }>("/health");
+export async function checkHealth(network = "testnet") {
+  return apiFetch<{ status: string; suiCheckpoint: string }>(
+    `/health?network=${network}`
+  );
 }
 
 // ─── Agents ───────────────────────────────────────────────────────────
@@ -78,54 +81,69 @@ export interface CreateAgentResponse {
   contractCall: ContractCall;
 }
 
-export async function createAgent(data: {
-  name: string;
-  description: string;
-  config: Record<string, unknown>;
-  commitMessage: string;
-}) {
-  return apiFetch<CreateAgentResponse>("/agents", {
+export async function createAgent(
+  data: {
+    name: string;
+    description: string;
+    config: Record<string, unknown>;
+    commitMessage: string;
+  },
+  network = "testnet"
+) {
+  return apiFetch<CreateAgentResponse>(`/agents?network=${network}`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function listAgents(owner: string) {
-  return apiFetch<OwnedObjectsResponse>(`/agents?owner=${encodeURIComponent(owner)}`);
+export async function listAgents(owner: string, network = "testnet") {
+  return apiFetch<OwnedObjectsResponse>(
+    `/agents?owner=${encodeURIComponent(owner)}&network=${network}`
+  );
 }
 
-export async function getAgent(objectId: string) {
-  return apiFetch<{ data: SuiObjectData }>(`/agents/${objectId}`);
+export async function getAgent(objectId: string, network = "testnet") {
+  return apiFetch<{ data: SuiObjectData }>(
+    `/agents/${objectId}?network=${network}`
+  );
 }
 
 // ─── Versions ─────────────────────────────────────────────────────────
 
-export async function createVersion(data: {
-  agentId: string;
-  registryObjectId: string;
-  config: Record<string, unknown>;
-  commitMessage: string;
-}) {
-  return apiFetch<CreateAgentResponse>("/agents/version", {
+export async function createVersion(
+  data: {
+    agentId: string;
+    registryObjectId: string;
+    config: Record<string, unknown>;
+    commitMessage: string;
+  },
+  network = "testnet"
+) {
+  return apiFetch<CreateAgentResponse>(`/agents/version?network=${network}`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function listVersions(owner: string) {
-  return apiFetch<OwnedObjectsResponse>(`/versions?owner=${encodeURIComponent(owner)}`);
+export async function listVersions(owner: string, network = "testnet") {
+  return apiFetch<OwnedObjectsResponse>(
+    `/versions?owner=${encodeURIComponent(owner)}&network=${network}`
+  );
 }
 
 // ─── Fork ─────────────────────────────────────────────────────────────
 
-export async function forkAgent(data: {
-  sourceVersionId: string;
-  name: string;
-  description: string;
-  config: Record<string, unknown>;
-  commitMessage: string;
-}) {
-  return apiFetch<CreateAgentResponse>("/agents/fork", {
+export async function forkAgent(
+  data: {
+    sourceVersionId: string;
+    name: string;
+    description: string;
+    config: Record<string, unknown>;
+    commitMessage: string;
+  },
+  network = "testnet"
+) {
+  return apiFetch<CreateAgentResponse>(`/agents/fork?network=${network}`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -140,13 +158,16 @@ export interface RunAgentResponse {
   contractCall: ContractCall;
 }
 
-export async function runAgent(data: {
-  agentId: string;
-  registryObjectId: string;
-  versionObjectId: string;
-  walletAddress?: string;
-}) {
-  return apiFetch<RunAgentResponse>("/agents/run", {
+export async function runAgent(
+  data: {
+    agentId: string;
+    registryObjectId: string;
+    versionObjectId: string;
+    walletAddress?: string;
+  },
+  network = "testnet"
+) {
+  return apiFetch<RunAgentResponse>(`/agents/run?network=${network}`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -159,22 +180,24 @@ export interface RunPromptResponse {
   toolSelected: string | null;
 }
 
-export async function runAgentWithPrompt(data: {
-  registryObjectId: string;
-  versionObjectId: string;
-  walletAddress?: string;
-  prompt: string;
-}) {
-  return apiFetch<RunPromptResponse>("/agents/run-prompt", {
+export async function runAgentWithPrompt(
+  data: {
+    registryObjectId: string;
+    versionObjectId: string;
+    walletAddress?: string;
+    prompt: string;
+  },
+  network = "testnet"
+) {
+  return apiFetch<RunPromptResponse>(`/agents/run-prompt?network=${network}`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function listExecutions(cursor?: string, limit = 50) {
-  const params = new URLSearchParams();
+export async function listExecutions(network = "testnet", cursor?: string, limit = 50) {
+  const params = new URLSearchParams({ network, limit: String(limit) });
   if (cursor) params.set("cursor", cursor);
-  params.set("limit", String(limit));
   return apiFetch<EventsResponse>(`/executions?${params}`);
 }
 
@@ -186,8 +209,8 @@ export interface BlobResponse {
   available: boolean;
 }
 
-export async function readBlob(blobId: string) {
-  return apiFetch<BlobResponse>(`/blobs/${blobId}`);
+export async function readBlob(blobId: string, network = "testnet") {
+  return apiFetch<BlobResponse>(`/blobs/${blobId}?network=${network}`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────

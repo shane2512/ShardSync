@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>ShardSync - Agent Core</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "outline": "#7e7576",
+            "surface-tint": "#5e5e5e",
+            "on-tertiary-fixed": "#1b1b1b",
+            "tertiary-fixed": "#e2e2e2",
+            "surface-container-high": "#e8e8e8",
+            "surface-variant": "#e2e2e2",
+            "secondary-container": "#6063ee",
+            "on-surface-variant": "#4c4546",
+            "on-primary-fixed": "#1b1b1b",
+            "on-tertiary-container": "#848484",
+            "primary-container": "#1b1b1b",
+            "surface-container-highest": "#e2e2e2",
+            "on-tertiary-fixed-variant": "#474747",
+            "on-secondary-fixed-variant": "#2f2ebe",
+            "inverse-surface": "#303030",
+            "on-primary-container": "#848484",
+            "on-secondary-container": "#fffbff",
+            "background": "#f9f9f9",
+            "inverse-on-surface": "#f1f1f1",
+            "secondary-fixed-dim": "#c0c1ff",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#c6c6c6",
+            "outline-variant": "#cfc4c5",
+            "on-background": "#1b1b1b",
+            "on-secondary": "#ffffff",
+            "on-error": "#ffffff",
+            "surface-dim": "#dadada",
+            "tertiary": "#000000",
+            "secondary-fixed": "#e1e0ff",
+            "on-secondary-fixed": "#07006c",
+            "surface-container": "#eeeeee",
+            "primary-fixed-dim": "#c6c6c6",
+            "on-primary-fixed-variant": "#474747",
+            "error-container": "#ffdad6",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#1b1b1b",
+            "on-surface": "#1b1b1b",
+            "on-tertiary": "#ffffff",
+            "primary-fixed": "#e2e2e2",
+            "on-primary": "#ffffff",
+            "primary": "#000000",
+            "surface-bright": "#f9f9f9",
+            "tertiary-fixed-dim": "#c6c6c6",
+            "error": "#ba1a1a",
+            "secondary": "#0066CC",
+            "surface-container-low": "#f3f3f3",
+            "surface": "#f9f9f9"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1.25rem",
+            "3xl": "2rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin-desktop": "40px",
+            "container-max": "1280px",
+            "gutter": "24px",
+            "margin-mobile": "16px",
+            "unit": "8px"
+          },
+          "fontFamily": {
+            "headline-md": ["Hanken Grotesk"],
+            "label-mono": ["JetBrains Mono"],
+            "body-md": ["Hanken Grotesk"],
+            "body-lg": ["Hanken Grotesk"],
+            "headline-lg-mobile": ["Hanken Grotesk"],
+            "headline-sm": ["Hanken Grotesk"],
+            "headline-lg": ["Hanken Grotesk"]
+          },
+          "fontSize": {
+            "headline-md": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-mono": ["13px", { "lineHeight": "1.0", "fontWeight": "500" }],
+            "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "headline-lg-mobile": ["32px", { "lineHeight": "1.1", "fontWeight": "800" }],
+            "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+            "headline-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "800" }]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    .clay-card {
+      background: #ffffff;
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.05),
+        inset 0 2px 4px rgba(255, 255, 255, 1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.05);
+      border: none;
+    }
+
+    .clay-button-primary {
+      background: #0066CC;
+      box-shadow:
+        0 10px 20px rgba(70, 72, 212, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.15s ease-out;
+    }
+
+    .clay-button-primary:active {
+      transform: scale(0.96);
+    }
+
+    .clay-input {
+      background: #f3f3f3;
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.05),
+        0 2px 4px rgba(255, 255, 255, 0.8);
+      border: none;
+    }
+
+    .clay-nav-active {
+      box-shadow: inset 0 -2px 0 #0066CC;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+
+<body class="bg-background text-on-background font-body-md min-h-screen">
+  <!-- TopNavBar Navigation Shell -->
+  <header class="bg-surface sticky top-0 z-50 shadow-[0_20px_40px_rgba(0,0,0,0.05)]">
+    <div class="flex justify-between items-center w-full px-margin-desktop h-20 max-w-container-max mx-auto">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-lg">S</span>
+          </div>
+          <span class="font-headline-md text-headline-md font-extrabold text-primary">ShardSync</span>
+        </div>
+        <nav class="hidden md:flex items-center gap-8">
+          <a class="text-on-surface-variant hover:text-secondary transition-colors duration-200 font-label-mono text-label-mono"
+            href="#">Dashboard</a>
+          <a class="text-secondary font-bold border-b-2 border-secondary pb-1 font-label-mono text-label-mono"
+            href="#">Agents</a>
+          <a class="text-on-surface-variant hover:text-secondary transition-colors duration-200 font-label-mono text-label-mono"
+            href="#">Timeline</a>
+          <a class="text-on-surface-variant hover:text-secondary transition-colors duration-200 font-label-mono text-label-mono"
+            href="#">Analytics</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-4">
+        <div
+          class="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+          <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <span class="font-label-mono text-label-mono text-on-surface-variant">Sui Testnet</span>
+        </div>
+        <button
+          class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl clay-button-primary font-label-mono text-label-mono">
+          <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+          0x0c58...547d
+        </button>
+        <button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-container-max mx-auto px-margin-desktop py-12">
+    <!-- Header Section -->
+    <section class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+      <div>
+        <h1 class="font-headline-lg text-headline-lg text-primary mb-2">Agents</h1>
+        <p class="text-on-surface-variant font-body-lg">
+          On-chain autonomous entities managed by <span class="text-secondary font-medium">0x0c58...80547d</span>
+        </p>
+      </div>
+      <button
+        class="clay-button-primary flex items-center gap-2 text-white px-8 py-4 rounded-2xl font-headline-sm text-headline-sm">
+        <span class="material-symbols-outlined">add_circle</span>
+        Create New Agent
+      </button>
+    </section>
+    <!-- Search and Filters -->
+    <section class="mb-8">
+      <div class="relative w-full">
+        <span
+          class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-on-tertiary-container">search</span>
+        <input
+          class="clay-input w-full pl-16 pr-8 py-5 rounded-3xl font-body-md text-on-surface focus:ring-2 focus:ring-secondary focus:outline-none transition-all"
+          placeholder="Search agents by name or ID..." type="text" />
+      </div>
+    </section>
+    <!-- Agent Cards Grid -->
+    <section class="flex flex-col gap-6">
+      <!-- Card 1 -->
+      <div
+        class="clay-card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between group cursor-pointer hover:translate-y-[-4px] transition-transform duration-300">
+        <div class="flex items-center gap-6 w-full md:w-auto">
+          <div
+            class="w-16 h-16 rounded-2xl bg-secondary-container/10 flex items-center justify-center text-secondary shadow-[inset_0_2px_8px_rgba(255,255,255,1)]">
+            <span class="material-symbols-outlined text-[32px]">memory</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="font-headline-sm text-headline-sm text-primary">price-oracle-bot</h3>
+              <span
+                class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold tracking-wider uppercase border border-emerald-100">On-chain</span>
+            </div>
+            <p class="text-on-surface-variant font-body-md mb-2">Fetches DEX prices and publishes oracle updates to
+              mainnet</p>
+            <span class="font-label-mono text-label-mono text-on-tertiary-container">ID: 0x56ae13...df6ef8</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-12 mt-6 md:mt-0 w-full md:w-auto justify-end">
+          <div class="text-center">
+            <p class="font-headline-md text-headline-md text-primary">2</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Versions</p>
+          </div>
+          <div class="text-center">
+            <p class="font-headline-sm text-headline-sm text-primary">1h ago</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Updated</p>
+          </div>
+          <div
+            class="w-12 h-12 rounded-full clay-card flex items-center justify-center text-on-surface-variant group-hover:bg-secondary group-hover:text-white transition-all">
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div
+        class="clay-card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between group cursor-pointer hover:translate-y-[-4px] transition-transform duration-300">
+        <div class="flex items-center gap-6 w-full md:w-auto">
+          <div
+            class="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 shadow-[inset_0_2px_8px_rgba(255,255,255,1)]">
+            <span class="material-symbols-outlined text-[32px]">fork_right</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="font-headline-sm text-headline-sm text-primary">oracle-fork-2</h3>
+              <span
+                class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold tracking-wider uppercase border border-emerald-100">On-chain</span>
+            </div>
+            <p class="text-on-surface-variant font-body-md mb-2">Minor upgrades for multi-hop liquidity pathing
+              optimizations</p>
+            <span class="font-label-mono text-label-mono text-on-tertiary-container">ID: 0x67c249...cdaf8b</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-12 mt-6 md:mt-0 w-full md:w-auto justify-end">
+          <div class="text-center">
+            <p class="font-headline-md text-headline-md text-primary">1</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Versions</p>
+          </div>
+          <div class="text-center">
+            <p class="font-headline-sm text-headline-sm text-primary">4m ago</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Updated</p>
+          </div>
+          <div
+            class="w-12 h-12 rounded-full clay-card flex items-center justify-center text-on-surface-variant group-hover:bg-secondary group-hover:text-white transition-all">
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div
+        class="clay-card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between group cursor-pointer hover:translate-y-[-4px] transition-transform duration-300">
+        <div class="flex items-center gap-6 w-full md:w-auto">
+          <div
+            class="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-[inset_0_2px_8px_rgba(255,255,255,1)]">
+            <span class="material-symbols-outlined text-[32px]">account_tree</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="font-headline-sm text-headline-sm text-primary">price-oracle-fork</h3>
+              <span
+                class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold tracking-wider uppercase border border-emerald-100">On-chain</span>
+            </div>
+            <p class="text-on-surface-variant font-body-md mb-2">Forked from price-oracle-bot v2 for sandbox testing</p>
+            <span class="font-label-mono text-label-mono text-on-tertiary-container">ID: 0xa86f5c...b0db21</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-12 mt-6 md:mt-0 w-full md:w-auto justify-end">
+          <div class="text-center">
+            <p class="font-headline-md text-headline-md text-primary">1</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Versions</p>
+          </div>
+          <div class="text-center">
+            <p class="font-headline-sm text-headline-sm text-primary">1h ago</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Updated</p>
+          </div>
+          <div
+            class="w-12 h-12 rounded-full clay-card flex items-center justify-center text-on-surface-variant group-hover:bg-secondary group-hover:text-white transition-all">
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </div>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div
+        class="clay-card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between group cursor-pointer hover:translate-y-[-4px] transition-transform duration-300">
+        <div class="flex items-center gap-6 w-full md:w-auto">
+          <div
+            class="w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 shadow-[inset_0_2px_8px_rgba(255,255,255,1)]">
+            <span class="material-symbols-outlined text-[32px]">balance</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="font-headline-sm text-headline-sm text-primary">rebalance-agent</h3>
+              <span
+                class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold tracking-wider uppercase border border-emerald-100">On-chain</span>
+            </div>
+            <p class="text-on-surface-variant font-body-md mb-2">Rebalances liquidity pools based on volume volatility
+            </p>
+            <span class="font-label-mono text-label-mono text-on-tertiary-container">ID: 0xe33ad1...732b78</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-12 mt-6 md:mt-0 w-full md:w-auto justify-end">
+          <div class="text-center">
+            <p class="font-headline-md text-headline-md text-primary">1</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Versions</p>
+          </div>
+          <div class="text-center">
+            <p class="font-headline-sm text-headline-sm text-primary">12m ago</p>
+            <p class="font-label-mono text-[10px] text-on-tertiary-container uppercase tracking-widest">Updated</p>
+          </div>
+          <div
+            class="w-12 h-12 rounded-full clay-card flex items-center justify-center text-on-surface-variant group-hover:bg-secondary group-hover:text-white transition-all">
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Featured Data Visualizations (Bento Style) -->
+    <section class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="clay-card p-8 rounded-3xl md:col-span-2">
+        <div class="flex justify-between items-center mb-6">
+          <h4 class="font-headline-sm text-headline-sm text-primary">Network Throughput</h4>
+          <span class="material-symbols-outlined text-secondary">insights</span>
+        </div>
+        <div
+          class="h-48 w-full bg-surface-container-low rounded-2xl flex items-end justify-between p-4 gap-2 shadow-[inset_0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden relative">
+          <!-- Mock Chart -->
+          <div class="flex-1 bg-secondary/20 rounded-t-lg h-24"></div>
+          <div class="flex-1 bg-secondary/30 rounded-t-lg h-32"></div>
+          <div class="flex-1 bg-secondary/25 rounded-t-lg h-28"></div>
+          <div class="flex-1 bg-secondary/40 rounded-t-lg h-40"></div>
+          <div class="flex-1 bg-secondary/60 rounded-t-lg h-36"></div>
+          <div class="flex-1 bg-secondary/50 rounded-t-lg h-44"></div>
+          <div class="flex-1 bg-secondary rounded-t-lg h-32"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent"></div>
+        </div>
+      </div>
+      <div class="clay-card p-8 rounded-3xl bg-secondary text-white overflow-hidden relative">
+        <div class="relative z-10">
+          <p class="font-label-mono text-label-mono uppercase tracking-widest text-white/70 mb-2">Total Managed Assets
+          </p>
+          <h4 class="font-headline-lg text-[36px] mb-6">$2.4M</h4>
+          <div class="flex items-center gap-2 text-emerald-400 font-bold">
+            <span class="material-symbols-outlined">trending_up</span>
+            <span>+12.4%</span>
+          </div>
+        </div>
+        <!-- Abstract clay blob background -->
+        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+        <div class="absolute right-4 top-4 w-12 h-12 bg-white/5 rounded-full blur-xl"></div>
+      </div>
+    </section>
+  </main>
+  <footer class="mt-20 py-12 border-t border-surface-container">
+    <div
+      class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-8">
+      <div class="flex items-center gap-2 opacity-50">
+        <div class="w-6 h-6 bg-primary rounded flex items-center justify-center">
+          <span class="text-white font-bold text-xs">S</span>
+        </div>
+        <span class="font-headline-sm text-headline-sm text-primary">ShardSync</span>
+      </div>
+      <div class="flex gap-8">
+        <a class="text-on-surface-variant hover:text-secondary font-label-mono text-label-mono"
+          href="#">Documentation</a>
+        <a class="text-on-surface-variant hover:text-secondary font-label-mono text-label-mono" href="#">API
+          Reference</a>
+        <a class="text-on-surface-variant hover:text-secondary font-label-mono text-label-mono" href="#">Security</a>
+      </div>
+      <p class="text-on-tertiary-container font-label-mono text-[12px]">© 2024 ShardSync protocol. All agents are
+        sovereign.</p>
+    </div>
+  </footer>
+  <script>
+    // Subtle tilt effect for cards
+    document.querySelectorAll('.clay-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = (y - centerY) / 50;
+        const rotateY = (centerX - x) / 50;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)`;
+      });
+    });
+  </script>
+</body>
+
+</html>

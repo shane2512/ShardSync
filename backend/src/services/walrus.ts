@@ -3,34 +3,29 @@ import { getEnv } from "../config/env.js";
 
 /**
  * Walrus service – blob upload/download via HTTP publisher/aggregator.
- * Per rules: configs, logs, and snapshots are always Walrus blobs.
+ * Accepts optional publisherUrl / aggregatorUrl so routes can pass
+ * the correct network-specific endpoint.
  */
 
 export interface WalrusStoreResult {
   blobId: string;
-  /** Raw response from publisher for future proof/certificate handling */
   raw: unknown;
 }
 
-/**
- * Upload data to Walrus as a blob.
- * Uses the publisher HTTP API: PUT /v1/blobs
- */
-export async function storeBlob(data: string | Buffer): Promise<WalrusStoreResult> {
+/** Upload data to Walrus as a blob. */
+export async function storeBlob(
+  data: string | Buffer,
+  publisherUrl?: string
+): Promise<WalrusStoreResult> {
   const env = getEnv();
-  const url = `${env.WALRUS_PUBLISHER_URL}/v1/blobs`;
+  const url = `${publisherUrl ?? env.WALRUS_PUBLISHER_URL}/v1/blobs`;
 
   const response = await axios.put(url, data, {
-    headers: {
-      "Content-Type": "application/octet-stream",
-    },
+    headers: { "Content-Type": "application/octet-stream" },
     timeout: 60_000,
   });
 
-  // The publisher returns different shapes depending on whether the blob
-  // was newly created or already existed.
   const body = response.data;
-
   let blobId: string;
 
   if (body.newlyCreated) {
@@ -38,7 +33,6 @@ export async function storeBlob(data: string | Buffer): Promise<WalrusStoreResul
   } else if (body.alreadyCertified) {
     blobId = body.alreadyCertified.blobId;
   } else {
-    // Fallback – try to extract from any shape
     blobId = body.blobId ?? body.blob_id ?? "";
   }
 
@@ -51,13 +45,13 @@ export async function storeBlob(data: string | Buffer): Promise<WalrusStoreResul
   return { blobId, raw: body };
 }
 
-/**
- * Retrieve a blob from Walrus by its blob ID.
- * Uses the aggregator HTTP API: GET /v1/blobs/<BLOB_ID>
- */
-export async function readBlob(blobId: string): Promise<string> {
+/** Retrieve a blob from Walrus by its blob ID. */
+export async function readBlob(
+  blobId: string,
+  aggregatorUrl?: string
+): Promise<string> {
   const env = getEnv();
-  const url = `${env.WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
+  const url = `${aggregatorUrl ?? env.WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
 
   const response = await axios.get(url, {
     timeout: 30_000,
@@ -67,14 +61,14 @@ export async function readBlob(blobId: string): Promise<string> {
   return response.data as string;
 }
 
-/**
- * Check if a blob exists / is available on Walrus.
- * Returns true if the aggregator responds successfully.
- */
-export async function blobExists(blobId: string): Promise<boolean> {
+/** Check if a blob exists on Walrus. */
+export async function blobExists(
+  blobId: string,
+  aggregatorUrl?: string
+): Promise<boolean> {
   try {
     const env = getEnv();
-    const url = `${env.WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
+    const url = `${aggregatorUrl ?? env.WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
     await axios.head(url, { timeout: 10_000 });
     return true;
   } catch {

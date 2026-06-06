@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { listAgents, listVersions, listExecutions, checkHealth, shortenId } from "../lib/api";
 import { useWalletAddress } from "../hooks/useWalletAddress";
+import { useNetwork } from "../hooks/useNetwork";
 
 interface AgentStats {
   name: string;
@@ -38,13 +39,14 @@ export default function AnalyticsPage() {
   const [overview, setOverview] = useState({ agents: 0, versions: 0, executions: 0, successRate: 0, checkpoint: "" });
   const [loading, setLoading] = useState(true);
   const owner = useWalletAddress();
+  const { network } = useNetwork();
 
   const load = useCallback(async () => {
     try {
-      const healthRes = await checkHealth();
-      const agentsRes = owner ? await listAgents(owner) : { data: [] };
-      const versionsRes = owner ? await listVersions(owner) : { data: [] };
-      const execsRes = await listExecutions();
+      const healthRes = await checkHealth(network);
+      const agentsRes = owner ? await listAgents(owner, network) : { data: [] };
+      const versionsRes = owner ? await listVersions(owner, network) : { data: [] };
+      const execsRes = await listExecutions(network);
 
       const agents = agentsRes.data.map((a) => {
         const f = a.data.content.fields as Record<string, unknown>;
@@ -107,7 +109,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [owner]);
+  }, [owner, network]);
 
   useEffect(() => { load(); }, [load]);
 

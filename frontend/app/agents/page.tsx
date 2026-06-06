@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { listAgents, shortenId, timeAgo } from "../lib/api";
 import { useWalletAddress, useIsWalletConnected } from "../hooks/useWalletAddress";
+import { useNetwork } from "../hooks/useNetwork";
 
 interface AgentFields {
   name: string;
@@ -28,11 +29,12 @@ export default function AgentsPage() {
 
   const owner = useWalletAddress();
   const isConnected = useIsWalletConnected();
+  const { network } = useNetwork();
 
   useEffect(() => {
     if (!owner) return;
     setLoading(true);
-    listAgents(owner)
+    listAgents(owner, network)
       .then((res) => {
         const items = res.data.map((d) => ({
           objectId: d.data.objectId,
@@ -42,7 +44,7 @@ export default function AgentsPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [owner]);
+  }, [owner, network]);
 
   const filtered = agents.filter(
     (a) =>

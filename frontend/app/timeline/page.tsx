@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { listExecutions, listAgents, shortenId, timeAgo } from "../lib/api";
 import { useWalletAddress } from "../hooks/useWalletAddress";
+import { useNetwork } from "../hooks/useNetwork";
 
 interface ExecutionEvent {
   agent_id: string;
@@ -25,13 +26,14 @@ export default function TimelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const owner = useWalletAddress();
+  const { network } = useNetwork();
 
   useEffect(() => {
     async function load() {
       try {
         const [execRes, agentsRes] = await Promise.all([
-          listExecutions(),
-          owner ? listAgents(owner) : Promise.resolve({ data: [] }),
+          listExecutions(network),
+          owner ? listAgents(owner, network) : Promise.resolve({ data: [] }),
         ]);
 
         const agentMap = new Map<string, string>();
@@ -59,7 +61,7 @@ export default function TimelinePage() {
       }
     }
     load();
-  }, [owner]);
+  }, [owner, network]);
 
   return (
     <div className="max-w-container-max mx-auto px-4 md:px-margin-desktop py-8 md:py-12">

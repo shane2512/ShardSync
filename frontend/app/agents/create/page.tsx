@@ -6,8 +6,10 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
 import { createAgent } from "../../lib/api";
 import { useIsWalletConnected } from "../../hooks/useWalletAddress";
+import { useNetwork } from "../../hooks/useNetwork";
 
-const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
+const TESTNET_PKG = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
+const MAINNET_PKG = process.env.NEXT_PUBLIC_MAINNET_PACKAGE_ID || "";
 
 const DEFAULT_CONFIG = `{
   "mcp_server": "@tatumio/blockchain-mcp",
@@ -39,6 +41,7 @@ export default function CreateAgentPage() {
   const account = useCurrentAccount();
   const isConnected = useIsWalletConnected();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { network } = useNetwork();
 
   const validateConfig = (value: string) => {
     setConfig(value);
@@ -63,12 +66,12 @@ export default function CreateAgentPage() {
         description: description.trim(),
         config: parsed,
         commitMessage,
-      });
+      }, network);
 
       setPhase("signing");
       const tx = new Transaction();
       tx.moveCall({
-        target: `${PACKAGE_ID}::agent_registry::create_agent`,
+        target: `${network === "mainnet" ? MAINNET_PKG : TESTNET_PKG}::agent_registry::create_agent`,
         arguments: [
           tx.pure.string(name.trim()),
           tx.pure.string(description.trim()),
