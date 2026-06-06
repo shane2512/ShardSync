@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/Sui-Testnet-4DA2FF?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNS0xMC01ek0yIDE3bDEwIDUgMTAtNS0xMC01LTEwIDV6TTIgMTJsMTAgNSAxMC01LTEwLTUtMTAgNXoiLz48L3N2Zz4=&logoColor=white" alt="Sui Testnet" />
+<img src="https://img.shields.io/badge/Sui-Testnet%20%26%20Mainnet-4DA2FF?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNS0xMC01ek0yIDE3bDEwIDUgMTAtNS0xMC01LTEwIDV6TTIgMTJsMTAgNSAxMC01LTEwLTUtMTAgNXoiLz48L3N2Zz4=&logoColor=white" alt="Sui Testnet & Mainnet" />
 <img src="https://img.shields.io/badge/Walrus-Decentralized_Storage-8B5CF6?style=for-the-badge" alt="Walrus" />
 <img src="https://img.shields.io/badge/Tatum-MCP_Gateway-F59E0B?style=for-the-badge" alt="Tatum" />
 <img src="https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
@@ -95,24 +95,34 @@ There is no standard way to:
 │  /api/agents/run  →  Tatum MCP Tools (in-process)           │
 │  /api/blobs/:id  →  Walrus Aggregator proxy                 │
 └──────────┬────────────────────────────────┬─────────────────┘
-           │                                │
-┌──────────▼──────────┐          ┌──────────▼──────────┐
-│   Tatum Gateway     │          │  Walrus Testnet     │
-│                     │          │                     │
-│ sui-testnet.gateway │          │ publisher.walrus-   │
-│   .tatum.io         │          │   testnet.walrus    │
-│                     │          │   .space            │
-│ Sui JSON-RPC        │          │ Blob PUT / GET      │
-│ MCP Data API        │          │ (erasure-coded)     │
-└──────────┬──────────┘          └─────────────────────┘
+           │ ?network=testnet|mainnet        │
+┌──────────▼──────────┐          ┌──────────▼──────────────────┐
+│   Tatum RPC Gateway │          │  Walrus Storage             │
+│                     │          │                             │
+│ Testnet:            │          │ Testnet:                    │
+│  sui-testnet.       │          │  publisher.walrus-testnet   │
+│  gateway.tatum.io   │          │  .walrus.space              │
+│                     │          │                             │
+│ Mainnet:            │          │ Mainnet:                    │
+│  sui-mainnet.       │          │  walrus-mainnet-publisher-1 │
+│  gateway.tatum.io   │          │  .staketab.org (community)  │
+│                     │          │  aggregator.walrus-mainnet  │
+│ Sui JSON-RPC        │          │  .walrus.space              │
+│ MCP Data API        │          │  Blob PUT / GET             │
+└──────────┬──────────┘          └─────────────────────────────┘
            │
-┌──────────▼──────────┐
-│   Sui Testnet       │
-│                     │
-│  AgentRegistry obj  │
-│  AgentVersion obj   │
-│  ExecutionEvent     │
-└─────────────────────┘
+┌──────────▼──────────────────────────────────────┐
+│   Sui Network (network-aware)                   │
+│                                                 │
+│ Testnet Package:                                │
+│  0x17104a3b...9531177                           │
+│                                                 │
+│ Mainnet Package:                                │
+│  0x64bea627...c604d4                            │
+│                                                 │
+│  AgentRegistry obj · AgentVersion obj           │
+│  ExecutionEvent · on-chain logs                 │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -133,12 +143,35 @@ There is no standard way to:
 
 ##  Deployed Contracts
 
+ShardSync is live on both **Sui Testnet** and **Sui Mainnet**. The same Move module (`agent_registry`) is deployed to both networks with independent package IDs.
+
+### 🟢 Testnet (default)
+
 | Field | Value |
 |---|---|
 | **Package ID** | `0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177` |
 | **Module** | `agent_registry` |
 | **Network** | Sui Testnet |
-| **Explorer** | [View on Suivision](https://testnet.suivision.xyz/package/0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177) |
+| **Tatum RPC** | `https://sui-testnet.gateway.tatum.io/` |
+| **Walrus Publisher** | `https://publisher.walrus-testnet.walrus.space` |
+| **Walrus Aggregator** | `https://aggregator.walrus-testnet.walrus.space` |
+| **Explorer** | [View on SuiVision Testnet](https://testnet.suivision.xyz/package/0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177) |
+
+### 🔴 Mainnet (live)
+
+| Field | Value |
+|---|---|
+| **Package ID** | `0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4` |
+| **Module** | `agent_registry` |
+| **Network** | Sui Mainnet |
+| **Tatum RPC** | `https://sui-mainnet.gateway.tatum.io/` |
+| **Walrus Publisher** | `https://walrus-mainnet-publisher-1.staketab.org` *(community-run, intermittent)* |
+| **Walrus Aggregator** | `https://aggregator.walrus-mainnet.walrus.space` |
+| **Explorer** | [View on SuiVision Mainnet](https://suivision.xyz/package/0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4) |
+
+> **⚠️ Mainnet write operations** (create agent, new version, run agent) require a funded Walrus Mainnet publisher.
+> The community publisher is intermittently available. For production, deploy your own or use [Nami Cloud](https://nami.cloud).
+> **Read operations** (list agents, analytics, timeline) work on Mainnet without any restrictions.
 
 ---
 
@@ -172,11 +205,21 @@ Edit `.env` with your values:
 
 ```env
 TATUM_API_KEY=your_tatum_api_key_here
+
+# ── Testnet ───────────────────────────────────────────────────────────
 TATUM_SUI_RPC_URL=https://sui-testnet.gateway.tatum.io/
 WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space
 WALRUS_AGGREGATOR_URL=https://aggregator.walrus-testnet.walrus.space
-SUI_NETWORK=testnet
 SHARDSYNC_PACKAGE_ID=0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177
+
+# ── Mainnet ───────────────────────────────────────────────────────────
+TATUM_SUI_MAINNET_RPC_URL=https://sui-mainnet.gateway.tatum.io/
+WALRUS_MAINNET_PUBLISHER_URL=https://walrus-mainnet-publisher-1.staketab.org
+WALRUS_MAINNET_AGGREGATOR_URL=https://aggregator.walrus-mainnet.walrus.space
+SHARDSYNC_MAINNET_PACKAGE_ID=0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4
+
+# ── Shared ────────────────────────────────────────────────────────────
+SUI_NETWORK=testnet
 PORT=4000
 ```
 
@@ -197,6 +240,7 @@ Edit `.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 NEXT_PUBLIC_PACKAGE_ID=0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177
+NEXT_PUBLIC_MAINNET_PACKAGE_ID=0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4
 ```
 
 ```bash

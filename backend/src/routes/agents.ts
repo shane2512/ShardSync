@@ -468,8 +468,8 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
       const noToolReason = enabledTools.length === 0
         ? "No MCP tools are enabled in this agent's configuration. Add tools to mcp_tools_enabled in the config."
         : anyToolMatch && isSuiChain && !anyToolMatch.suiSupported
-        ? `The tool "${anyToolMatch.name}" does not support Sui chains. It only works with EVM/BTC chains (Ethereum, Polygon, etc.). Consider changing target_chain in the agent config.`
-        : `No tool in this agent's configuration matches your request: "${prompt}". Enabled tools: [${enabledTools.join(", ")}]. Try rephrasing or update the agent config to include relevant tools.`;
+          ? `The tool "${anyToolMatch.name}" does not support Sui chains. It only works with EVM/BTC chains (Ethereum, Polygon, etc.). Consider changing target_chain in the agent config.`
+          : `No tool in this agent's configuration matches your request: "${prompt}". Enabled tools: [${enabledTools.join(", ")}]. Try rephrasing or update the agent config to include relevant tools.`;
 
       executionLog = {
         timestamp: new Date().toISOString(),
@@ -499,7 +499,7 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
         const r = await callTatumMcpTool("gateway_execute_rpc", { chain: targetChain, method: "eth_blockNumber", params: [] });
         mcpResult = { success: r.success, output: r.output, error: r.error };
 
-      // ── Sui-native tools — routed through suix_* JSON-RPC ──────────────
+        // ── Sui-native tools — routed through suix_* JSON-RPC ──────────────
       } else if (isSuiChain) {
         try {
           if (selectedTool.name === "get_transaction_history") {
@@ -532,20 +532,20 @@ agentRouter.post("/agents/run-prompt", async (req: Request, res: Response) => {
           mcpResult = { success: false, output: null, error: e.message || String(e) };
         }
 
-      // ── EVM / Data API tools ────────────────────────────────────────────
+        // ── EVM / Data API tools ────────────────────────────────────────────
       } else {
         try {
           const toolArgs: Record<string, unknown> = {};
           if (selectedTool.requiresAddress) { toolArgs.addresses = resolvedAddress; toolArgs.address = resolvedAddress; }
-          if (selectedTool.requiresChain)   { toolArgs.chain = targetChain; }
+          if (selectedTool.requiresChain) { toolArgs.chain = targetChain; }
 
           if (selectedTool.name === "get_wallet_portfolio") toolArgs.tokenTypes = "native";
           if (selectedTool.name === "get_exchange_rate") {
             const symbolMatch = prompt.match(/\b(BTC|ETH|SOL|SUI|MATIC|BNB|AVAX|ADA|XRP|DOGE|DOT|LINK|UNI)\b/i);
-            toolArgs.symbol   = symbolMatch ? symbolMatch[1].toUpperCase() : "ETH";
+            toolArgs.symbol = symbolMatch ? symbolMatch[1].toUpperCase() : "ETH";
             toolArgs.basePair = "USD";
           }
-          if (selectedTool.name === "get_metadata")     { toolArgs.tokenAddress = resolvedAddress; toolArgs.tokenIds = ["1"]; }
+          if (selectedTool.name === "get_metadata") { toolArgs.tokenAddress = resolvedAddress; toolArgs.tokenIds = ["1"]; }
           if (selectedTool.name === "get_block_by_time") { toolArgs.time = Math.floor(Date.now() / 1000); }
 
           const r = await callTatumMcpTool(selectedTool.name, toolArgs);
@@ -633,7 +633,7 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
     const toolToRun = enabledTools[0] || "get_wallet_portfolio"; // Default fallback tool
     const targetChain = config.parameters?.target_chain || "sui-testnet";
     const configWallet = config.parameters?.target_wallet;
-    
+
     // Resolve wallet address to query
     const queryAddress = configWallet && configWallet !== "0xYourWalletAddressHere"
       ? configWallet
@@ -743,12 +743,12 @@ agentRouter.post("/agents/run", async (req: Request, res: Response) => {
       tool_calls: [
         { tool: toolToRun, args: toolArgs }
       ],
-      output: mcpResult.success 
-        ? mcpResult.output 
+      output: mcpResult.success
+        ? mcpResult.output
         : { status: 500, error: mcpResult.error || "Tatum MCP tool call failed." },
       success: mcpResult.success,
     };
-    
+
     const durationMs = Date.now() - startTime;
 
     // 7. Persist execution log onto Walrus

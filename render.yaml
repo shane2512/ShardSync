@@ -24,9 +24,9 @@ services:
       - key: TATUM_SUI_MAINNET_RPC_URL
         value: https://sui-mainnet.gateway.tatum.io/
       - key: WALRUS_MAINNET_PUBLISHER_URL
-        value: https://walrus-mainnet-publisher-1.staketab.org
+        value: https://publisher.walrus.space
       - key: WALRUS_MAINNET_AGGREGATOR_URL
-        value: https://aggregator.walrus-mainnet.walrus.space
+        value: https://aggregator.walrus.space
       - key: SHARDSYNC_MAINNET_PACKAGE_ID
         value: "0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4"
       # Set these in Render dashboard (do NOT commit secrets):

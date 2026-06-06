@@ -26,11 +26,11 @@ const envSchema = z.object({
   WALRUS_MAINNET_PUBLISHER_URL: z
     .string()
     .url()
-    .default("https://walrus-mainnet-publisher-1.staketab.org"),
+    .default("https://publisher.walrus.space"),
   WALRUS_MAINNET_AGGREGATOR_URL: z
     .string()
     .url()
-    .default("https://aggregator.walrus-mainnet.walrus.space"),
+    .default("https://aggregator.walrus.space"),
   // Shared
   SUI_NETWORK: z.enum(["testnet", "mainnet", "devnet"]).default("testnet"),
   SHARDSYNC_PACKAGE_ID: z.string().default("0x0"),
