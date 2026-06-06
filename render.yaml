@@ -29,7 +29,9 @@ services:
         value: https://aggregator.walrus-mainnet.walrus.space
       - key: SHARDSYNC_MAINNET_PACKAGE_ID
         value: "0x64bea6270d379cb1e9e75bab769fa671d2421f072572f82e807dee6e94c604d4"
-      # Set these in Render dashboard (do NOT commit secrets):
-      # TATUM_API_KEY
-      # SHARDSYNC_PACKAGE_ID  (testnet)
-      # FRONTEND_URL  (your Vercel URL, e.g. https://shardsync.vercel.app)
+      # ── Testnet package ID (public, safe to commit) ─────────────────────
+      - key: SHARDSYNC_PACKAGE_ID
+        value: "0x17104a3b9595ee7514a188628bf556a4fe7d39de242ff9b869129ab4e9531177"
+      # ── Secrets: set these in Render dashboard, NOT here ─────────────────
+      # TATUM_API_KEY      ← required, add in Render dashboard
+      # FRONTEND_URL       ← your Vercel URL e.g. https://shardsync.vercel.app
